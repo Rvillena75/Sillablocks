@@ -5,6 +5,8 @@ import arduino.sila_server as server
 
 def reset_server_state() -> None:
     server.current_blocks.clear()
+    server.current_mission_index = 0
+    server.completed_mission_ids.clear()
     server.last_input = None
     server.last_received_input = None
     server.last_ignored_input = None
@@ -37,6 +39,14 @@ def test_health_responds_correctly() -> None:
         "service": "sillablocks",
         "mission_id": "m001",
     }
+
+
+def complete_current_mission(client: TestClient) -> dict:
+    payload: dict = {}
+    for block in server.current_mission()["target_blocks"]:
+        payload = scan(client, block)
+    assert payload["status"] == "success"
+    return payload
 
 
 def test_reset_leaves_empty_buffer_and_initial_state() -> None:
@@ -132,3 +142,149 @@ def test_buffer_exposes_game_state_fields() -> None:
     assert payload["current_text"] == "MA"
     assert payload["status"] == "in_progress"
     assert payload["feedback"] == server.FEEDBACK_IN_PROGRESS
+
+
+def test_next_advances_after_success() -> None:
+    client = make_client()
+    complete_current_mission(client)
+
+    payload = scan(client, "SIGUIENTE")
+
+    assert payload["mission_id"] == "m002"
+    assert payload["mission_number"] == 2
+    assert payload["total_missions"] == 5
+    assert payload["completed_missions"] == 1
+    assert payload["current_blocks"] == []
+    assert payload["status"] == "idle"
+    assert payload["available_blocks"] == ["PA", "PÁ", "MA", "SA"]
+
+
+def test_next_does_not_advance_before_success() -> None:
+    client = make_client()
+    scan(client, "MA")
+
+    payload = scan(client, "SIGUIENTE")
+
+    assert payload["mission_id"] == "m001"
+    assert payload["mission_number"] == 1
+    assert payload["current_blocks"] == ["MA"]
+    assert payload["status"] == "in_progress"
+    assert payload["feedback"] == server.FEEDBACK_NEXT_BLOCKED
+    assert payload["accepted"] is False
+
+
+def test_reset_restarts_current_mission_without_returning_to_first() -> None:
+    client = make_client()
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    scan(client, "PA")
+
+    payload = scan(client, "RESET")
+
+    assert payload["mission_id"] == "m002"
+    assert payload["mission_number"] == 2
+    assert payload["completed_missions"] == 1
+    assert payload["current_blocks"] == []
+    assert payload["status"] == "idle"
+
+
+def test_reset_all_returns_to_first_mission() -> None:
+    client = make_client()
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    scan(client, "PA")
+
+    payload = scan(client, "RESET_TODO")
+
+    assert payload["mission_id"] == "m001"
+    assert payload["mission_number"] == 1
+    assert payload["completed_missions"] == 0
+    assert payload["current_blocks"] == []
+    assert payload["status"] == "idle"
+
+
+def test_papa_validates_correctly_in_second_mission() -> None:
+    client = make_client()
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+
+    scan(client, "PA")
+    payload = scan(client, "PÁ")
+
+    assert payload["mission_id"] == "m002"
+    assert payload["current_blocks"] == ["PA", "PÁ"]
+    assert payload["current_text"] == "PAPÁ"
+    assert payload["status"] == "success"
+
+
+def test_casa_validates_correctly_in_third_mission() -> None:
+    client = make_client()
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+
+    scan(client, "CA")
+    payload = scan(client, "SA")
+
+    assert payload["mission_id"] == "m003"
+    assert payload["current_blocks"] == ["CA", "SA"]
+    assert payload["current_text"] == "CASA"
+    assert payload["status"] == "success"
+
+
+def test_mesa_validates_correctly_in_fourth_mission() -> None:
+    client = make_client()
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+
+    scan(client, "ME")
+    payload = scan(client, "SA")
+
+    assert payload["mission_id"] == "m004"
+    assert payload["current_blocks"] == ["ME", "SA"]
+    assert payload["current_text"] == "MESA"
+    assert payload["status"] == "success"
+
+
+def test_bota_validates_correctly_in_fifth_mission() -> None:
+    client = make_client()
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+    complete_current_mission(client)
+    scan(client, "SIGUIENTE")
+
+    scan(client, "B")
+    scan(client, "O")
+    scan(client, "T")
+    payload = scan(client, "A")
+
+    assert payload["mission_id"] == "m005"
+    assert payload["current_blocks"] == ["B", "O", "T", "A"]
+    assert payload["current_text"] == "BOTA"
+    assert payload["status"] == "success"
+    assert payload["available_blocks"] == ["B", "O", "T", "A"]
+
+
+def test_next_after_last_success_marks_demo_complete() -> None:
+    client = make_client()
+    for _ in range(4):
+        complete_current_mission(client)
+        scan(client, "SIGUIENTE")
+    complete_current_mission(client)
+
+    payload = scan(client, "SIGUIENTE")
+
+    assert payload["mission_id"] == "m005"
+    assert payload["status"] == "demo_complete"
+    assert payload["is_demo_complete"] is True
+    assert payload["is_last_mission"] is True
+    assert payload["completed_missions"] == 5
