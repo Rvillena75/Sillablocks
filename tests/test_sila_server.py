@@ -101,19 +101,21 @@ def test_delete_removes_last_block_not_last_character() -> None:
     assert payload["status"] == "in_progress"
 
 
-def test_unavailable_input_is_ignored_and_does_not_change_buffer() -> None:
+def test_any_normal_input_is_appended_even_if_not_suggested_for_mission() -> None:
     client = make_client()
 
     scan(client, "MA")
     payload_one = scan(client, "1")
     payload_g = scan(client, "G")
 
-    assert payload_one["current_blocks"] == ["MA"]
-    assert payload_one["action"] == "ignored"
-    assert payload_one["accepted"] is False
-    assert payload_g["current_blocks"] == ["MA"]
-    assert payload_g["action"] == "ignored"
-    assert payload_g["accepted"] is False
+    assert payload_one["current_blocks"] == ["MA", "1"]
+    assert payload_one["action"] == "append"
+    assert payload_one["accepted"] is True
+    assert payload_one["status"] == "try_again"
+    assert payload_g["current_blocks"] == ["MA", "1", "G"]
+    assert payload_g["action"] == "append"
+    assert payload_g["accepted"] is True
+    assert payload_g["status"] == "try_again"
 
 
 def test_extra_block_after_success_does_not_break_mission() -> None:

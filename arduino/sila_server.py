@@ -189,10 +189,6 @@ def expected_next_block() -> str | None:
     return None
 
 
-def is_available_block(value: str) -> bool:
-    return value in current_mission()["available_blocks"]
-
-
 def remember_input(value: str, action: str, accepted: bool) -> None:
     recent_inputs.append(
         {
@@ -422,10 +418,6 @@ async def handle_nfc_value(raw_value: str) -> JSONResponse:
         accepted = go_to_previous_mission()
     elif game_status in {"success", "demo_complete"}:
         last_action = "ignored_after_success"
-        last_ignored_input = value
-        accepted = False
-    elif not is_available_block(value):
-        last_action = "ignored"
         last_ignored_input = value
         accepted = False
     else:
@@ -1133,7 +1125,7 @@ INDEX_HTML = """
 
       <aside class="side" aria-label="Controles y estado">
         <section class="side-card">
-          <h2>Cubos de esta misión</h2>
+          <h2>Cubos sugeridos</h2>
           <div class="button-grid" id="inputButtons"></div>
         </section>
 
