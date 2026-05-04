@@ -518,6 +518,7 @@ INDEX_HTML = """
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SilaBlocks</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
     /* Base */
     :root {
       color-scheme: dark;
@@ -547,7 +548,7 @@ INDEX_HTML = """
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Fredoka', Arial, sans-serif;
       color: var(--ink);
       background:
         radial-gradient(circle at 50% 28%, rgba(33, 199, 255, 0.18), transparent 25%),
@@ -557,16 +558,15 @@ INDEX_HTML = """
       overflow-x: hidden;
     }
 
-    body::before {
+    body::after {
       content: "";
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background:
-        linear-gradient(90deg, transparent 0 49%, rgba(246, 196, 83, 0.06) 49% 51%, transparent 52%),
-        linear-gradient(0deg, transparent 0 49%, rgba(33, 199, 255, 0.05) 49% 51%, transparent 52%);
-      background-size: 170px 170px;
-      mask-image: radial-gradient(circle at center, black, transparent 80%);
+      /* Partículas ligeramente más grandes y brillantes */
+      background: transparent url('data:image/svg+xml;utf8,<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2.5" fill="%23ffe8a3" opacity="0.8"/><circle cx="200" cy="150" r="2" fill="%2321c7ff" opacity="0.7"/><circle cx="350" cy="300" r="3" fill="%23ffe8a3" opacity="0.8"/><circle cx="100" cy="350" r="1.5" fill="%2321c7ff" opacity="0.6"/></svg>') repeat;
+      animation: floatParticles 60s linear infinite;
+      z-index: 100; /* Trae el polvo mágico por encima de toda la interfaz */
     }
 
     button {
@@ -605,36 +605,61 @@ INDEX_HTML = """
     }
 
     .brand h1 {
+      position: relative;
       width: fit-content;
       padding: 0;
       border: 0;
       border-radius: 0;
       background: transparent;
       color: #ffe8a3;
-      font-size: clamp(38px, 5vw, 60px);
+      font-size: clamp(42px, 6vw, 68px);
       font-weight: 900;
       line-height: 0.98;
-      text-shadow: 0 4px 0 #4a260d, 0 0 22px rgba(255, 232, 163, 0.55);
+      /* Efecto 3D mucho más profundo y contrastante */
+      text-shadow: 
+        0 2px 0 #e1a928,   /* Capa clara superior */
+        0 4px 0 #b3731a,   /* Capa media */
+        0 6px 0 #854d0a,   /* Capa oscura */
+        0 8px 0 #522b03,   /* Capa muy oscura */
+        0 10px 0 #2b1400,  /* Base profunda de la madera */
+        0 15px 20px rgba(0, 0, 0, 0.8),    /* Sombra negra fuerte para despegarlo del fondo */
+        0 0 35px rgba(255, 232, 163, 0.4); /* Resplandor mágico global */
       box-shadow: none;
+      overflow: hidden;
+    }
+
+    /* Reflejo mágico que pasa sobre el título */
+    .brand h1::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -150%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+      transform: skewX(-25deg);
+      animation: titleShine 5s infinite;
     }
 
     .subtitle {
       width: fit-content;
-      padding: 6px 14px;
-      border: 2px solid #a56d2f;
-      border-radius: 8px;
-      background: linear-gradient(180deg, #d7ad68, #9d6a33);
+      padding: 8px 20px;
+      border: 3px solid #5b341c;
+      border-radius: 20px; /* Más redondo, estilo botón de videojuego */
+      background: linear-gradient(180deg, #f6c453, #d7ad68 40%, #9d6a33);
       color: #2b160b;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
-      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.32);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
       cursor: pointer;
-      box-shadow: 0 3px 0 #5b341c, inset 0 2px 0 rgba(255, 255, 255, 0.28);
+      box-shadow: 0 6px 0 #4a260d, 0 8px 15px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.6);
+      /* Animación de latido constante */
+      animation: heartbeat 2s infinite ease-in-out;
+      transition: box-shadow 0.1s;
     }
 
     .subtitle:active {
-      transform: translateY(3px);
-      box-shadow: 0 0 0 #5b341c, inset 0 2px 0 rgba(255, 255, 255, 0.28);
+      animation: none; /* Pausa el latido al hacer clic */
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #4a260d, inset 0 2px 0 rgba(255, 255, 255, 0.6);
     }
 
     /* Layout */
@@ -649,7 +674,7 @@ INDEX_HTML = """
     .side-card {
       position: relative;
       border: 4px solid #7b4b22;
-      border-radius: 8px;
+      border-radius: 20px;
       background:
         linear-gradient(180deg, rgba(255, 238, 188, 0.34), rgba(255, 238, 188, 0.05) 14%, transparent 22%),
         linear-gradient(180deg, #d5a760, #c0914d 18%, #b37c3e 100%);
@@ -663,7 +688,7 @@ INDEX_HTML = """
       inset: 9px;
       pointer-events: none;
       border: 2px solid rgba(63, 37, 18, 0.26);
-      border-radius: 6px;
+      border-radius: 12px;
     }
 
     .mission-card {
@@ -716,17 +741,20 @@ INDEX_HTML = """
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 10px;
       border-radius: 12px;
       border: 4px solid #4b2b19;
-      background: radial-gradient(circle at center, rgba(33, 199, 255, 0.14), rgba(28, 27, 30, 0.88));
+      /* Fondo más oscuro y contrastante para que resalte la magia */
+      background: radial-gradient(circle at center, rgba(33, 199, 255, 0.15), rgba(15, 12, 15, 0.95));
       color: #d6fbff;
       font-size: clamp(60px, 10vw, 120px);
       font-weight: 900;
       line-height: 1;
       overflow-wrap: anywhere;
       text-align: center;
-      text-shadow: 0 4px 0 rgba(0, 0, 0, 0.26);
+      text-shadow: 0 4px 0 rgba(0, 0, 0, 0.6);
+      /* Agregamos el palpitar del portal */
+      animation: pulsePortal 3s infinite ease-in-out;
     }
 
     /* Controls */
@@ -769,18 +797,25 @@ INDEX_HTML = """
     .manual-button {
       min-height: 50px;
       border: 4px solid #8b5b28;
-      border-radius: 8px;
+      border-radius: 16px; /* Botones más circulares y amigables */
       background: linear-gradient(180deg, #e1bb73, #a56d2f 58%, #5b341c);
       color: #2b160b;
       font-size: 22px;
       font-weight: 900;
       cursor: pointer;
       text-shadow: 0 1px 0 rgba(255, 238, 188, 0.45);
-      box-shadow: 0 7px 0 #3f2314, 0 12px 22px rgba(0, 0, 0, 0.34), inset 0 2px 0 rgba(255, 255, 255, 0.28);
+      box-shadow: 0 6px 0 #3f2314, 0 8px 15px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.28);
+      transition: transform 0.1s, box-shadow 0.1s, filter 0.2s; /* Transición suave para el clic */
     }
 
     .manual-button:hover {
       filter: brightness(1.12);
+    }
+
+    /* Efecto de hundimiento físico al hacer clic */
+    .manual-button:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #3f2314, inset 0 2px 0 rgba(255, 255, 255, 0.28);
     }
 
     .manual-button.command {
@@ -788,8 +823,12 @@ INDEX_HTML = """
       border-color: #4b2b19;
       background: linear-gradient(180deg, #075b88, #063653);
       color: #d6fbff;
-      font-size: 20px;
-      box-shadow: 0 6px 0 #100b17, 0 0 18px rgba(45, 212, 255, 0.18);
+      font-size: 22px; /* Un poco más grande para leer mejor */
+      box-shadow: 0 6px 0 #100b17, 0 8px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .manual-button.command:active {
+      box-shadow: 0 2px 0 #100b17;
     }
 
     .manual-button.primary {
@@ -809,6 +848,42 @@ INDEX_HTML = """
         grid-template-columns: 1fr;
       }
     }
+    /* --- Animaciones Mágicas --- */
+    @keyframes pulsePortal {
+      0% { box-shadow: inset 0 0 20px rgba(33, 199, 255, 0.1); border-color: #4b2b19; }
+      50% { box-shadow: inset 0 0 40px rgba(33, 199, 255, 0.4), 0 0 15px rgba(33, 199, 255, 0.2); border-color: #075b88; }
+      100% { box-shadow: inset 0 0 20px rgba(33, 199, 255, 0.1); border-color: #4b2b19; }
+    }
+
+    @keyframes floatMagic {
+      0% { transform: translateY(0px); filter: drop-shadow(0 0 5px rgba(214, 251, 255, 0.3)); }
+      50% { transform: translateY(-8px); filter: drop-shadow(0 0 15px rgba(214, 251, 255, 0.8)); }
+      100% { transform: translateY(0px); filter: drop-shadow(0 0 5px rgba(214, 251, 255, 0.3)); }
+    }
+
+    @keyframes blinkSoft {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.8; }
+    }
+
+    .magic-word {
+      display: inline-block;
+      animation: floatMagic 3s infinite ease-in-out;
+    }
+    @keyframes floatParticles {
+      from { background-position: 0 0; }
+      to { background-position: -400px -400px; }
+    }
+
+    @keyframes titleShine {
+      0%, 20% { left: -150%; }
+      80%, 100% { left: 200%; }
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
   </style>
 </head>
 <body>
@@ -816,7 +891,9 @@ INDEX_HTML = """
     <header class="topbar">
       <div class="brand">
         <h1>SilaBlocks</h1>
-        <a href="/aldea" class="subtitle" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">El Mundo de las Palabras Perdidas</a>
+        <a href="/aldea" class="subtitle" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          🏰 El Mundo de las Palabras Perdidas
+        </a>
       </div>
     </header>
 
@@ -868,8 +945,15 @@ INDEX_HTML = """
     }
 
     function render(payload) {
-      // Solo actualizamos la palabra gigante formada
-      ids.formed.textContent = payload.current_text || "-";
+      const word = payload.current_text || "";
+      
+      if (word === "") {
+        // Estado vacío interactivo y titilante
+        ids.formed.innerHTML = '<span style="animation: blinkSoft 1.5s infinite;">...</span>';
+      } else {
+        // Palabra insertada con efecto de flotar y brillar
+        ids.formed.innerHTML = `<span class="magic-word">${word}</span>`;
+      }
     }
 
     async function loadInitialState() {
@@ -910,15 +994,42 @@ ALDEA_HTML = """
     body {
       margin: 0;
       min-height: 100vh;
-      background-color: #7EC850;
-      background-image: radial-gradient(#6ebd44 15%, transparent 16%), radial-gradient(#6ebd44 15%, transparent 16%);
-      background-size: 60px 60px;
-      background-position: 0 0, 30px 30px;
-      font-family: Arial, sans-serif;
+      /* Degradado que va de cielo celeste a pasto verde */
+      background: linear-gradient(180deg, #87CEEB 0%, #A2D9CE 30%, #7EC850 40%, #7EC850 100%);
+      font-family: 'Fredoka', Arial, sans-serif; /* Usamos la misma fuente redondeada */
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 60px;
+      padding-top: 65px;
+      overflow-x: hidden; /* Evita scroll horizontal por las nubes */
+    }
+
+    /* Patrón de pasto solo en la mitad inferior */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 40% 0 0 0;
+      pointer-events: none;
+      background-image: radial-gradient(#6ebd44 15%, transparent 16%), radial-gradient(#6ebd44 15%, transparent 16%);
+      background-size: 60px 60px;
+      background-position: 0 0, 30px 30px;
+      z-index: -2;
+    }
+
+    /* Nubes animadas usando CSS puro (sin cargar imágenes externas) */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; height: 30vh;
+      pointer-events: none;
+      background: transparent url('data:image/svg+xml;utf8,<svg width="400" height="200" xmlns="http://www.w3.org/2000/svg"><path d="M 50 100 A 30 30 0 0 1 110 100 A 20 20 0 0 1 150 110 A 30 30 0 0 1 110 140 L 50 140 A 20 20 0 0 1 50 100" fill="white" opacity="0.6"/><path d="M 250 50 A 40 40 0 0 1 330 50 A 30 30 0 0 1 380 70 A 40 40 0 0 1 330 110 L 250 110 A 30 30 0 0 1 250 50" fill="white" opacity="0.4"/></svg>') repeat-x;
+      animation: floatClouds 120s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes floatClouds {
+      from { background-position: 0 0; }
+      to { background-position: 800px 0; }
     }
 
     /* Botón de volver arriba a la izquierda */
@@ -962,51 +1073,104 @@ ALDEA_HTML = """
     }
 
     h1 {
-      color: white;
-      font-size: 48px;
-      text-shadow: 0 4px 0 #4a260d, 0 0 15px rgba(255,255,255,0.5);
-      margin-bottom: 10px;
+      position: relative;
+      color: #ffe8a3;
+      font-size: clamp(32px, 5vw, 50px); /* Título un poco más compacto */
+      font-weight: 900;
+      line-height: 0.98;
+      margin-bottom: 5px; /* Eliminamos casi todo el margen de abajo */
       text-align: center;
+      text-shadow: 
+        0 2px 0 #e1a928, 0 4px 0 #b3731a, 0 6px 0 #854d0a,
+        0 8px 0 #522b03, 0 10px 0 #2b1400,
+        0 15px 20px rgba(0, 0, 0, 0.6), 0 0 35px rgba(255, 232, 163, 0.4);
+    }
+
+    /* Brillo mágico pasando sobre el título */
+    h1::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -150%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transform: skewX(-25deg);
+      animation: titleShine 5s infinite;
+    }
+    
+    @keyframes titleShine {
+      0%, 20% { left: -150%; }
+      80%, 100% { left: 200%; }
     }
 
     .yard {
       display: flex;
       gap: 80px;
-      margin-top: 40px;
-      padding: 60px 80px;
-      background: rgba(255, 255, 255, 0.15);
+      margin-top: 15px;
+      padding: 35px 60px 25px 60px;
+      background-color: #e3bc84;
+      /* Textura de tierrita (puntitos semi-transparentes) */
+      background-image: 
+        radial-gradient(rgba(139, 91, 40, 0.15) 15%, transparent 16%), 
+        radial-gradient(rgba(139, 91, 40, 0.15) 15%, transparent 16%);
+      background-size: 20px 20px;
+      background-position: 0 0, 10px 10px;
       border-radius: 30px;
-      border: 6px dashed #5a9e33;
+      border: 8px solid #8b5b28;
+      box-shadow: 
+        inset 0 0 30px rgba(139, 91, 40, 0.4),
+        0 15px 0 #5a9e33,
+        0 20px 20px rgba(0,0,0,0.3);
     }
 
     .house-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 12px;
+      position: relative; /* Para anclar la sombra */
+    }
+
+    /* Sombra de base en el piso */
+    .house-container::after {
+      content: '';
+      position: absolute;
+      bottom: 60px; /* Ajustado para quedar bajo la casa */
+      width: 160px;
+      height: 30px;
+      background: rgba(139, 91, 40, 0.5); /* Sombra color tierra oscura */
+      border-radius: 50%;
+      z-index: 0;
+      filter: blur(4px);
     }
 
     .house {
       width: 140px;
       height: 120px;
-      background-color: #e3bc84;
+      background-color: #f4d3a1; /* Madera un poco más clara para contrastar */
       border: 6px solid #8b5b28;
       border-radius: 8px;
       position: relative;
       transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      z-index: 1; /* Encima de la sombra */
+      transform-origin: bottom center;
     }
 
+    /* Techo (Triángulo) */
     .house::before { 
       content: '';
       position: absolute;
-      top: -65px;
-      left: -26px;
-      border-left: 90px solid transparent;
-      border-right: 90px solid transparent;
+      top: -66px; 
+      left: 50%;
+      transform: translateX(-50%); 
+      border-left: 95px solid transparent; /* Más ancho que la casa */
+      border-right: 95px solid transparent;
       border-bottom: 60px solid #d94c3a;
+      z-index: 4;
+      /* Alero del techo */
+      filter: drop-shadow(0px 8px 0px #8d221b); 
     }
 
+    /* Puerta */
     .house::after {
       content: '';
       position: absolute;
@@ -1017,6 +1181,8 @@ ALDEA_HTML = """
       height: 60px;
       background-color: #633a18;
       border-radius: 20px 20px 0 0;
+      border: 4px solid #4a260d; /* Marco de la puerta */
+      border-bottom: none;
     }
 
     .level-badge {
@@ -1038,15 +1204,16 @@ ALDEA_HTML = """
       font-size: 18px;
       font-weight: 900;
       border: 4px solid #075b88;
-      border-radius: 12px;
+      border-radius: 16px; /* Más redondo */
       cursor: pointer;
-      box-shadow: 0 6px 0 #063653;
+      box-shadow: 0 6px 0 #063653, 0 8px 15px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
       transition: transform 0.1s, box-shadow 0.1s, filter 0.2s;
+      z-index: 2; /* Sobre la sombra */
     }
 
     .upgrade-btn:active {
-      transform: translateY(6px);
-      box-shadow: 0 0 0 #063653;
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #063653, inset 0 2px 0 rgba(255,255,255,0.4);
     }
 
     /* Estado visual cuando no hay tokens */
@@ -1084,15 +1251,15 @@ ALDEA_HTML = """
 
     .chimney {
       position: absolute;
-      top: -95px;
-      right: 15px;
+      top: -75px; /* La bajamos para que toque el techo */
+      right: 18px; /* Ajuste horizontal fino */
       width: 22px;
-      height: 45px;
+      height: 55px; /* Más alta para que se hunda bien atrás del triángulo rojo */
       background: #c2593a;
       border: 4px solid #8d221b;
-      opacity: 0; /* Oculto por defecto */
+      opacity: 0; 
       transition: opacity 0.5s ease-in;
-      z-index: -1; /* Se esconde detrás del techo */
+      z-index: -1; 
     }
 
     .bush {
@@ -1114,9 +1281,43 @@ ALDEA_HTML = """
     .lvl-3 .window-right { opacity: 1; }
     .lvl-4 .chimney { opacity: 1; }
     .lvl-5 .bush { opacity: 1; }
+
+    /* Sol Giratorio y Rayos */
+    .sun {
+      position: absolute;
+      top: 40px;
+      left: 12vw; /* Lo ubicamos a la izquierda */
+      width: 80px;
+      height: 80px;
+      background: #f6c453;
+      border-radius: 50%;
+      box-shadow: 0 0 40px #f6c453, 0 0 80px #f6c453; /* Resplandor */
+      z-index: -2; /* Para que quede detrás de las nubes */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: spinSun 40s linear infinite; /* Rota muy lentamente */
+    }
+
+    .sun::before {
+      content: '';
+      position: absolute;
+      width: 130px;
+      height: 130px;
+      border: 4px dashed rgba(246, 196, 83, 0.6); /* Rayos del sol */
+      border-radius: 50%;
+    }
+
+    @keyframes spinSun {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+
+  <!-- El nuevo Sol Animado -->
+  <div class="sun"></div>
 
   <a href="/" class="back-btn">⬅ Volver a SilaBlocks</a>
   
@@ -1168,16 +1369,31 @@ ALDEA_HTML = """
         tokens--;
         document.getElementById('tokenCount').innerText = tokens;
         
+        // Guardamos el nivel anterior para la animación
+        let prevLevel = levels[id];
+        
         // Subimos el nivel de la casa
         levels[id]++;
         document.getElementById('badge' + id).innerText = 'Nivel ' + levels[id];
         
-        // Hacemos crecer la casa
         let house = document.getElementById('house' + id);
-        let newScale = 1 + (levels[id] * 0.1); 
+        let prevScale = 1 + (prevLevel * 0.05);
+        let newScale = 1 + (levels[id] * 0.05); 
+        
+        // Animación de "Salto Mágico" usando la API de animaciones nativa
+        house.animate([
+          { transform: `scale(${prevScale}) scaleY(0.85) scaleX(1.1)` }, // Se aplasta para tomar impulso
+          { transform: `scale(${newScale}) scaleY(1.1) scaleX(0.95)`, offset: 0.5 }, // Salta y se estira hacia arriba
+          { transform: `scale(${newScale}) scaleY(1) scaleX(1)` } // Cae suavemente en su nuevo tamaño
+        ], { 
+          duration: 400, 
+          easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)' 
+        });
+
+        // Fijamos el tamaño final para cuando termine la animación
         house.style.transform = `scale(${newScale})`;
 
-        // ESTA ES LA LÍNEA NUEVA: Le agrega la clase del nivel para que aparezcan los detalles
+        // Agregamos la clase del nivel para que aparezcan chimeneas, ventanas, etc.
         house.classList.add('lvl-' + levels[id]);
 
         // Verificamos si debemos desactivar los botones
