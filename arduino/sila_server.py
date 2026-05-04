@@ -453,6 +453,10 @@ async def handle_nfc_value(raw_value: str) -> JSONResponse:
 async def index() -> HTMLResponse:
     return HTMLResponse(INDEX_HTML)
 
+@app.get("/aldea", response_class=HTMLResponse)
+async def aldea_view() -> HTMLResponse:
+    return HTMLResponse(ALDEA_HTML)
+
 
 @app.get("/health")
 async def health() -> dict[str, Any]:
@@ -575,34 +579,13 @@ INDEX_HTML = """
       padding: 14px 0 20px;
     }
 
-    h1,
-    h2,
-    h3,
-    p {
+    h1, h2, h3, p {
       margin: 0;
-    }
-
-    .label {
-      width: fit-content;
-      margin: 0 auto;
-      padding: 7px 20px 8px;
-      border: 2px solid #9f6a2d;
-      border-radius: 8px;
-      background: linear-gradient(180deg, var(--purple-bright), var(--purple) 65%, #211038);
-      color: var(--gold-bright);
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 0;
-      text-transform: uppercase;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.36);
-      box-shadow: 0 4px 0 #241224, 0 0 14px rgba(246, 196, 83, 0.18);
     }
 
     /* Header */
     .topbar {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 18px;
+      display: flex;
       align-items: center;
       margin-bottom: 12px;
       padding: 14px 18px;
@@ -615,8 +598,10 @@ INDEX_HTML = """
     }
 
     .brand {
-      display: grid;
-      gap: 4px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
     .brand h1 {
@@ -626,7 +611,7 @@ INDEX_HTML = """
       border-radius: 0;
       background: transparent;
       color: #ffe8a3;
-      font-size: clamp(48px, 6vw, 82px);
+      font-size: clamp(38px, 5vw, 60px);
       font-weight: 900;
       line-height: 0.98;
       text-shadow: 0 4px 0 #4a260d, 0 0 22px rgba(255, 232, 163, 0.55);
@@ -635,37 +620,29 @@ INDEX_HTML = """
 
     .subtitle {
       width: fit-content;
-      padding: 7px 22px;
+      padding: 6px 14px;
       border: 2px solid #a56d2f;
       border-radius: 8px;
       background: linear-gradient(180deg, #d7ad68, #9d6a33);
       color: #2b160b;
-      font-size: clamp(17px, 2.3vw, 28px);
+      font-size: 20px;
       font-weight: 900;
       text-shadow: 0 1px 0 rgba(255, 255, 255, 0.32);
+      cursor: pointer;
+      box-shadow: 0 3px 0 #5b341c, inset 0 2px 0 rgba(255, 255, 255, 0.28);
     }
 
-    .connection {
-      min-width: 142px;
-      padding: 12px 15px;
-      border: 3px solid #5b341c;
-      border-radius: 8px;
-      background:
-        linear-gradient(180deg, rgba(255, 232, 163, 0.12), transparent 30%),
-        linear-gradient(180deg, #4b2a18, #1c0e08);
-      color: #7cff81;
-      font-size: 15px;
-      font-weight: 900;
-      text-align: center;
-      box-shadow: 0 0 18px rgba(80, 215, 108, 0.20), inset 0 0 12px rgba(0, 0, 0, 0.28);
+    .subtitle:active {
+      transform: translateY(3px);
+      box-shadow: 0 0 0 #5b341c, inset 0 2px 0 rgba(255, 255, 255, 0.28);
     }
 
     /* Layout */
     .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(310px, 360px);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch; /* Esto obliga a la tarjeta a usar todo el ancho horizontal */
       gap: 18px;
-      align-items: start;
     }
 
     .mission-card,
@@ -691,8 +668,8 @@ INDEX_HTML = """
 
     .mission-card {
       display: grid;
-      gap: 14px;
-      padding: 20px 22px;
+      gap: 12px;
+      padding: 16px 22px;
       overflow: hidden;
     }
 
@@ -711,271 +688,45 @@ INDEX_HTML = """
       z-index: 1;
     }
 
-    .mission-head {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 14px;
-      align-items: start;
-    }
-
-    .mission-pill {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      min-height: 34px;
-      margin: 0 auto;
-      padding: 8px 58px;
-      border: 3px solid #9f6a2d;
-      border-radius: 8px;
-      background: linear-gradient(180deg, #56307d, #2b1746 68%, #160b24);
-      color: #ffe8a3;
-      font-size: 16px;
-      font-weight: 900;
-      box-shadow: 0 5px 0 #231224, 0 0 16px rgba(246, 196, 83, 0.22);
-    }
-
     .prompt {
-      margin-top: 8px;
       color: #2b160b;
-      font-size: clamp(32px, 4.4vw, 60px);
-      font-weight: 900;
-      line-height: 1.02;
-      text-align: center;
-      text-shadow: 0 2px 0 rgba(255, 238, 188, 0.32);
-    }
-
-    .world-badge {
-      display: grid;
-      place-items: center;
-      min-width: 138px;
-      min-height: 100px;
-      padding: 12px;
-      border: 3px solid #7b4b22;
-      border-radius: 8px;
-      background:
-        radial-gradient(circle at 50% 38%, rgba(33, 199, 255, 0.36), transparent 54%),
-        linear-gradient(180deg, #0d5a84, #17314b);
-      color: #ffe8a3;
-      text-align: center;
-      font-size: 17px;
+      font-size: clamp(28px, 4vw, 44px);
       font-weight: 900;
       line-height: 1.1;
-      box-shadow: 0 0 24px rgba(33, 199, 255, 0.26), inset 0 0 18px rgba(33, 199, 255, 0.14);
+      text-align: center;
+      text-shadow: 0 2px 0 rgba(255, 238, 188, 0.32);
+      padding: 0 10px;
     }
 
-    /* Mission surfaces */
-    .mission-grid {
-      display: grid;
-      grid-template-columns: minmax(210px, 0.36fr) minmax(0, 0.64fr);
-      gap: 14px;
-      align-items: stretch;
-    }
-
-    .word-panel,
-    .formed-panel,
-    .portal-panel {
+    /* Giant formed word panel */
+    .formed-panel {
       display: grid;
       gap: 8px;
-      padding: 14px;
+      padding: 12px;
       border: 3px solid #6c4728;
-      border-radius: 8px;
+      border-radius: 12px;
       background:
         linear-gradient(180deg, rgba(255, 238, 188, 0.14), rgba(54, 31, 22, 0.16)),
         #c99955;
       box-shadow: inset 0 0 24px rgba(43, 22, 11, 0.18), 0 8px 18px rgba(43, 22, 11, 0.24);
     }
 
-    .target,
     .formed {
-      min-height: 110px;
+      min-height: 180px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: clamp(46px, 7vw, 92px);
+      padding: 20px;
+      border-radius: 12px;
+      border: 4px solid #4b2b19;
+      background: radial-gradient(circle at center, rgba(33, 199, 255, 0.14), rgba(28, 27, 30, 0.88));
+      color: #d6fbff;
+      font-size: clamp(60px, 10vw, 120px);
       font-weight: 900;
       line-height: 1;
       overflow-wrap: anywhere;
       text-align: center;
       text-shadow: 0 4px 0 rgba(0, 0, 0, 0.26);
-    }
-
-    .target {
-      border: 4px solid #4b2b19;
-      background:
-        radial-gradient(circle at center, rgba(255, 208, 95, 0.24), rgba(28, 24, 22, 0.82) 68%),
-        #211719;
-      color: #ffe8a3;
-      box-shadow: 0 0 24px rgba(246, 196, 83, 0.36), inset 0 0 20px rgba(0, 0, 0, 0.40);
-    }
-
-    .formed {
-      min-height: 86px;
-      border: 4px solid #4b2b19;
-      background: radial-gradient(circle at center, rgba(33, 199, 255, 0.14), rgba(28, 27, 30, 0.88));
-      color: #d6fbff;
-      font-size: clamp(36px, 5vw, 66px);
-    }
-
-    .blocks {
-      min-height: 190px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      flex-wrap: wrap;
-      padding: 18px;
-      border: 4px solid #4b2b19;
-      border-radius: 8px;
-      background:
-        radial-gradient(circle at 50% 55%, rgba(33, 199, 255, 0.32), transparent 56%),
-        radial-gradient(circle at 50% 50%, rgba(29, 57, 115, 0.56), transparent 72%),
-        #08172b;
-      box-shadow: inset 0 0 38px rgba(33, 199, 255, 0.28), 0 0 30px rgba(33, 199, 255, 0.22);
-    }
-
-    .block {
-      min-width: 98px;
-      min-height: 88px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 18px;
-      border: 4px solid #8b5b28;
-      border-radius: 8px;
-      background:
-        linear-gradient(180deg, #e1bb73, #a56d2f 58%, #5b341c);
-      color: #2b160b;
-      font-size: clamp(34px, 5vw, 60px);
-      font-weight: 900;
-      line-height: 1;
-      text-shadow: 0 1px 0 rgba(255, 238, 188, 0.42);
-      box-shadow: 0 9px 0 #4b2b19, 0 14px 26px rgba(0, 0, 0, 0.38), inset 0 2px 0 rgba(255, 255, 255, 0.30);
-      animation: tileIn 190ms ease-out;
-    }
-
-    .block.correct {
-      border-color: rgba(153, 255, 170, 0.88);
-      background: linear-gradient(180deg, #3f9f54, #226b36);
-      color: #f2fff0;
-      box-shadow: 0 9px 0 #164823, 0 0 24px rgba(85, 214, 107, 0.34);
-    }
-
-    .block.wrong {
-      border-color: rgba(255, 224, 130, 0.92);
-      background: linear-gradient(180deg, #bf7b2e, #7a431f);
-      color: #fff4d6;
-      box-shadow: 0 9px 0 #4b2818, 0 0 20px rgba(255, 176, 32, 0.22);
-    }
-
-    .empty-blocks {
-      color: #ffe8a3;
-      font-size: clamp(22px, 3vw, 34px);
-      font-weight: 900;
-      text-align: center;
-      text-shadow: 0 0 18px rgba(246, 196, 83, 0.26);
-    }
-
-    @keyframes tileIn {
-      from { opacity: 0; transform: translateY(10px) scale(0.95); filter: brightness(1.4); }
-      to { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
-    }
-
-    /* Feedback and progress */
-    .feedback {
-      min-height: 86px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px 20px;
-      border: 4px solid #4b2b19;
-      border-radius: 8px;
-      background: linear-gradient(180deg, #0c5f90, #073653);
-      color: #e2f9ff;
-      font-size: clamp(24px, 3.2vw, 42px);
-      font-weight: 900;
-      line-height: 1.12;
-      text-align: center;
-      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
-      box-shadow: inset 0 0 22px rgba(33, 199, 255, 0.24), 0 0 18px rgba(33, 199, 255, 0.16);
-    }
-
-    .feedback.success {
-      border-color: #4b2b19;
-      background: linear-gradient(180deg, #2f8f46, #155729);
-      color: #f2fff0;
-      animation: celebrate 440ms ease-out;
-      box-shadow: 0 0 28px rgba(85, 214, 107, 0.28), inset 0 0 18px rgba(242, 255, 240, 0.12);
-    }
-
-    .feedback.try_again {
-      border-color: #4b2b19;
-      background: linear-gradient(180deg, #bf7b2e, #7a431f);
-      color: #fff4d6;
-    }
-
-    .feedback.demo_complete {
-      border-color: #4b2b19;
-      background: linear-gradient(180deg, #4f9f5f, #23613d);
-      color: #fff8d6;
-      box-shadow: 0 0 34px rgba(246, 196, 83, 0.32);
-    }
-
-    @keyframes celebrate {
-      0% { transform: scale(1); }
-      45% { transform: scale(1.025); }
-      100% { transform: scale(1); }
-    }
-
-    .progress-area {
-      display: grid;
-      gap: 10px;
-    }
-
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      color: #4b2b19;
-      font-size: 15px;
-      font-weight: 900;
-    }
-
-    .progress {
-      height: 22px;
-      overflow: hidden;
-      border: 3px solid #5a331d;
-      border-radius: 999px;
-      background: rgba(43, 22, 11, 0.92);
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.42);
-    }
-
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #075b88, #21c7ff, #50d76c, #f6c453);
-      box-shadow: 0 0 18px rgba(33, 199, 255, 0.42);
-      transition: width 180ms ease;
-    }
-
-    .final-message {
-      display: none;
-      padding: 18px;
-      border: 3px solid rgba(255, 232, 163, 0.74);
-      border-radius: 8px;
-      background: linear-gradient(180deg, #2f8f46, #155729);
-      color: #fff8d6;
-      font-size: clamp(24px, 3vw, 38px);
-      font-weight: 900;
-      line-height: 1.12;
-      text-align: center;
-      box-shadow: 0 0 28px rgba(246, 196, 83, 0.28);
-    }
-
-    .final-message.visible {
-      display: block;
     }
 
     /* Controls */
@@ -986,8 +737,8 @@ INDEX_HTML = """
 
     .side-card {
       display: grid;
-      gap: 14px;
-      padding: 16px;
+      gap: 18px;
+      padding: 24px;
       background:
         linear-gradient(180deg, rgba(255, 232, 163, 0.08), transparent 22%),
         linear-gradient(180deg, #4f2c19, #21120a);
@@ -995,32 +746,33 @@ INDEX_HTML = """
 
     .side-card h2 {
       color: #ffe8a3;
-      font-size: 24px;
+      font-size: 28px;
+      text-align: center;
       line-height: 1.05;
       text-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
     }
 
-    .button-grid,
     .command-grid {
-      display: grid;
-      gap: 10px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between; /* Separa los botones usando todo el espacio disponible */
+      gap: 16px;
+      margin-top: 16px;
+      width: 100%;
     }
 
-    .button-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .command-grid {
-      grid-template-columns: 1fr;
+    .command-grid .manual-button {
+      flex: 1; /* Hace que crezcan igualitariamente */
+      max-width: none; /* Quitamos el límite para que ocupen todo el espacio posible */
     }
 
     .manual-button {
-      min-height: 62px;
+      min-height: 50px;
       border: 4px solid #8b5b28;
       border-radius: 8px;
       background: linear-gradient(180deg, #e1bb73, #a56d2f 58%, #5b341c);
       color: #2b160b;
-      font-size: 25px;
+      font-size: 22px;
       font-weight: 900;
       cursor: pointer;
       text-shadow: 0 1px 0 rgba(255, 238, 188, 0.45);
@@ -1032,11 +784,11 @@ INDEX_HTML = """
     }
 
     .manual-button.command {
-      min-height: 54px;
+      min-height: 56px;
       border-color: #4b2b19;
       background: linear-gradient(180deg, #075b88, #063653);
       color: #d6fbff;
-      font-size: 18px;
+      font-size: 20px;
       box-shadow: 0 6px 0 #100b17, 0 0 18px rgba(45, 212, 255, 0.18);
     }
 
@@ -1053,14 +805,8 @@ INDEX_HTML = """
       }
 
       .topbar,
-      .layout,
-      .mission-head,
-      .mission-grid {
+      .layout {
         grid-template-columns: 1fr;
-      }
-
-      .world-badge {
-        min-height: 74px;
       }
     }
   </style>
@@ -1070,91 +816,31 @@ INDEX_HTML = """
     <header class="topbar">
       <div class="brand">
         <h1>SilaBlocks</h1>
-        <p class="subtitle">El Mundo de las Palabras Perdidas</p>
+        <a href="/aldea" class="subtitle" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">El Mundo de las Palabras Perdidas</a>
       </div>
-      <div class="connection" id="connection">Conectando</div>
     </header>
 
     <div class="layout">
-      <section class="mission-card" aria-label="Misión actual">
-        <div class="mission-head">
-          <div>
-            <div class="mission-pill" id="missionCounter">Misión 1 de 5</div>
-            <p class="prompt" id="prompt">Reconstruye la palabra</p>
-          </div>
-          <div class="world-badge" id="worldBadge">Mundo por restaurar</div>
+      <section class="mission-card" aria-label="Misión actual" style="width: 100%;">
+        <div>
+          <p class="prompt" style="font-size: clamp(20px, 3vw, 32px); margin-bottom: 4px;">Escucha la instrucción, e inserta el cubo asociado al sonido que escuchas</p>
+          <p style="text-align: center; font-size: 18px; color: #5b341c; font-weight: bold; margin: 0;">(Por ejemplo: si se escucha "mmmm", poner M)</p>
+        </div>
+        
+        <div class="formed-panel">
+          <div class="formed" id="formed">-</div>
         </div>
 
-        <div class="final-message" id="finalMessage">Completaste todas las misiones.</div>
-
-        <div class="mission-grid">
-          <div class="word-panel">
-            <div class="label">Palabra perdida</div>
-            <div class="target" id="target">MAMÁ</div>
-          </div>
-          <div class="formed-panel">
-            <div class="label">Palabra formada</div>
-            <div class="formed" id="formed">-</div>
-          </div>
-        </div>
-
-        <div class="portal-panel">
-          <div class="label">Portal de bloques</div>
-          <div class="blocks" id="blocks"></div>
-        </div>
-
-        <div class="feedback" id="feedback">Escanea un cubo para comenzar.</div>
-
-        <div class="progress-area">
-          <div class="progress-label">
-            <span>Palabra actual</span>
-            <span id="missionProgressText">0%</span>
-          </div>
-          <div class="progress" aria-hidden="true">
-            <div class="progress-bar" id="progressBar"></div>
-          </div>
-          <div class="progress-label">
-            <span>Restauración del mundo</span>
-            <span id="overallProgressText">0 de 5</span>
-          </div>
-          <div class="progress" aria-hidden="true">
-            <div class="progress-bar" id="overallProgressBar"></div>
-          </div>
-        </div>
+        <div class="command-grid" id="commandButtons"></div>
       </section>
-
-      <aside class="side" aria-label="Controles y estado">
-        <section class="side-card">
-          <h2>Cubos sugeridos</h2>
-          <div class="button-grid" id="inputButtons"></div>
-        </section>
-
-        <section class="side-card">
-          <h2>Acciones</h2>
-          <div class="command-grid" id="commandButtons"></div>
-        </section>
-      </aside>
     </div>
   </main>
 
   <script>
-    const commands = ["BORRAR", "RESET", "SIGUIENTE", "ANTERIOR"];
+    const commands = ["BORRAR", "SIGUIENTE", "ANTERIOR"];
 
     const ids = {
-      connection: document.getElementById("connection"),
-      prompt: document.getElementById("prompt"),
-      missionCounter: document.getElementById("missionCounter"),
-      worldBadge: document.getElementById("worldBadge"),
-      finalMessage: document.getElementById("finalMessage"),
-      target: document.getElementById("target"),
       formed: document.getElementById("formed"),
-      blocks: document.getElementById("blocks"),
-      feedback: document.getElementById("feedback"),
-      progressBar: document.getElementById("progressBar"),
-      missionProgressText: document.getElementById("missionProgressText"),
-      overallProgressText: document.getElementById("overallProgressText"),
-      overallProgressBar: document.getElementById("overallProgressBar"),
-      inputButtons: document.getElementById("inputButtons"),
       commandButtons: document.getElementById("commandButtons")
     };
 
@@ -1175,75 +861,15 @@ INDEX_HTML = """
       });
     }
 
-    function renderInputButtons(availableBlocks) {
-      ids.inputButtons.innerHTML = "";
-      availableBlocks.forEach((value) => {
-        ids.inputButtons.appendChild(createButton(value, "manual-button"));
-      });
-    }
-
     async function sendNfc(value) {
       const response = await fetch(`/nfc?letra=${encodeURIComponent(value)}`);
       const payload = await response.json();
       render(payload);
     }
 
-    function visiblePrompt(prompt, targetText) {
-      const fallback = "Reconstruye la palabra";
-      if (!prompt) {
-        return fallback;
-      }
-      if (!targetText) {
-        return prompt;
-      }
-      const cleaned = prompt.replace(targetText, "").replace(/\\s+/g, " ").trim();
-      return cleaned || fallback;
-    }
-
     function render(payload) {
-      const blocks = payload.current_blocks || payload.bloques || [];
-      const targetBlocks = payload.target_blocks || [];
-      const availableBlocks = payload.available_blocks || [];
-      const targetLength = Math.max(targetBlocks.length, 1);
-      const fallbackProgress = Math.min(100, Math.round((blocks.length / targetLength) * 100));
-      const progress = Number.isFinite(payload.progress_percent) ? payload.progress_percent : fallbackProgress;
-      const missionNumber = payload.mission_number || 1;
-      const totalMissions = payload.total_missions || 1;
-      const completedMissions = payload.completed_missions || 0;
-      const overallProgress = Number.isFinite(payload.overall_progress_percent)
-        ? payload.overall_progress_percent
-        : Math.round((completedMissions / totalMissions) * 100);
-
-      ids.prompt.textContent = visiblePrompt(payload.prompt, payload.target_text);
-      ids.missionCounter.textContent = `Misión ${missionNumber} de ${totalMissions}`;
-      ids.worldBadge.textContent = payload.is_demo_complete ? "Mundo restaurado" : `${completedMissions} de ${totalMissions} partes`;
-      ids.target.textContent = payload.target_text || "MAMÁ";
+      // Solo actualizamos la palabra gigante formada
       ids.formed.textContent = payload.current_text || "-";
-      ids.feedback.textContent = payload.feedback || "";
-      ids.feedback.className = `feedback ${payload.status || "idle"}`;
-      ids.progressBar.style.width = `${payload.status === "success" ? 100 : progress}%`;
-      ids.missionProgressText.textContent = `${payload.status === "success" ? 100 : progress}%`;
-      ids.overallProgressText.textContent = `${completedMissions} de ${totalMissions}`;
-      ids.overallProgressBar.style.width = `${overallProgress}%`;
-      ids.finalMessage.className = `final-message ${payload.is_demo_complete ? "visible" : ""}`;
-      ids.blocks.innerHTML = "";
-      if (blocks.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "empty-blocks";
-        empty.textContent = "Escanea un cubo para abrir el portal";
-        ids.blocks.appendChild(empty);
-      } else {
-        blocks.forEach((block, index) => {
-          const item = document.createElement("div");
-          const isCorrect = targetBlocks[index] === block;
-          const isKnownPosition = index < targetBlocks.length;
-          item.className = `block ${isCorrect ? "correct" : isKnownPosition ? "wrong" : ""}`;
-          item.textContent = block;
-          ids.blocks.appendChild(item);
-        });
-      }
-
-      renderInputButtons(availableBlocks);
     }
 
     async function loadInitialState() {
@@ -1256,16 +882,11 @@ INDEX_HTML = """
       const protocol = window.location.protocol === "https:" ? "wss" : "ws";
       const socket = new WebSocket(`${protocol}://${window.location.host}/ws`);
 
-      socket.addEventListener("open", () => {
-        ids.connection.textContent = "Conectado";
-      });
-
       socket.addEventListener("message", (event) => {
         render(JSON.parse(event.data));
       });
 
       socket.addEventListener("close", () => {
-        ids.connection.textContent = "Reconectando";
         window.setTimeout(connectSocket, 1200);
       });
     }
@@ -1273,6 +894,298 @@ INDEX_HTML = """
     renderCommandButtons();
     loadInitialState();
     connectSocket();
+  </script>
+</body>
+</html>
+"""
+
+ALDEA_HTML = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Aldea - SilaBlocks</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: #7EC850;
+      background-image: radial-gradient(#6ebd44 15%, transparent 16%), radial-gradient(#6ebd44 15%, transparent 16%);
+      background-size: 60px 60px;
+      background-position: 0 0, 30px 30px;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 60px;
+    }
+
+    /* Botón de volver arriba a la izquierda */
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 12px 24px;
+      background: #d94c3a;
+      color: white;
+      font-size: 18px;
+      font-weight: 900;
+      text-decoration: none;
+      border: 4px solid #8d221b;
+      border-radius: 12px;
+      box-shadow: 0 6px 0 #5c1410;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .back-btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 0 0 #5c1410;
+    }
+
+    /* Contador de tokens arriba a la derecha */
+    .token-display {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #f6c453;
+      color: #2b160b;
+      padding: 12px 24px;
+      font-size: 24px;
+      font-weight: 900;
+      border: 4px solid #b77732;
+      border-radius: 12px;
+      box-shadow: 0 6px 0 #a56d2f;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 {
+      color: white;
+      font-size: 48px;
+      text-shadow: 0 4px 0 #4a260d, 0 0 15px rgba(255,255,255,0.5);
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .yard {
+      display: flex;
+      gap: 80px;
+      margin-top: 40px;
+      padding: 60px 80px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 30px;
+      border: 6px dashed #5a9e33;
+    }
+
+    .house-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .house {
+      width: 140px;
+      height: 120px;
+      background-color: #e3bc84;
+      border: 6px solid #8b5b28;
+      border-radius: 8px;
+      position: relative;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .house::before { 
+      content: '';
+      position: absolute;
+      top: -65px;
+      left: -26px;
+      border-left: 90px solid transparent;
+      border-right: 90px solid transparent;
+      border-bottom: 60px solid #d94c3a;
+    }
+
+    .house::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 60px;
+      background-color: #633a18;
+      border-radius: 20px 20px 0 0;
+    }
+
+    .level-badge {
+      background: #f6c453;
+      color: #2b160b;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 900;
+      font-size: 20px;
+      border: 3px solid #b77732;
+      box-shadow: 0 4px 0 #a56d2f;
+      z-index: 10;
+    }
+
+    .upgrade-btn {
+      padding: 12px 24px;
+      background: #21c7ff;
+      color: #073653;
+      font-size: 18px;
+      font-weight: 900;
+      border: 4px solid #075b88;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #063653;
+      transition: transform 0.1s, box-shadow 0.1s, filter 0.2s;
+    }
+
+    .upgrade-btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 0 0 #063653;
+    }
+
+    /* Estado visual cuando no hay tokens */
+    .upgrade-btn.disabled {
+      filter: grayscale(100%);
+      cursor: not-allowed;
+    }
+
+    /* Detalles decorativos de las casas */
+    .window {
+      position: absolute;
+      top: 25px;
+      width: 28px;
+      height: 28px;
+      background: #d6fbff;
+      border: 4px solid #633a18;
+      border-radius: 4px;
+      opacity: 0; /* Oculto por defecto */
+      transition: opacity 0.5s ease-in;
+      z-index: 2;
+    }
+    
+    /* Forma de cruz en las ventanas */
+    .window::before {
+      content: ''; position: absolute;
+      top: 50%; left: 0; right: 0; height: 4px; background: #633a18; transform: translateY(-50%);
+    }
+    .window::after {
+      content: ''; position: absolute;
+      left: 50%; top: 0; bottom: 0; width: 4px; background: #633a18; transform: translateX(-50%);
+    }
+    
+    .window-left { left: 12px; }
+    .window-right { right: 12px; }
+
+    .chimney {
+      position: absolute;
+      top: -95px;
+      right: 15px;
+      width: 22px;
+      height: 45px;
+      background: #c2593a;
+      border: 4px solid #8d221b;
+      opacity: 0; /* Oculto por defecto */
+      transition: opacity 0.5s ease-in;
+      z-index: -1; /* Se esconde detrás del techo */
+    }
+
+    .bush {
+      position: absolute;
+      bottom: -4px;
+      left: -20px;
+      width: 45px;
+      height: 35px;
+      background: #50d76c;
+      border: 4px solid #226b36;
+      border-radius: 20px 20px 0 0;
+      opacity: 0; /* Oculto por defecto */
+      transition: opacity 0.5s ease-in;
+      z-index: 3;
+    }
+
+    /* Sistema de niveles: hace aparecer los elementos progresivamente */
+    .lvl-2 .window-left { opacity: 1; }
+    .lvl-3 .window-right { opacity: 1; }
+    .lvl-4 .chimney { opacity: 1; }
+    .lvl-5 .bush { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <a href="/" class="back-btn">⬅ Volver a SilaBlocks</a>
+  
+  <div class="token-display">
+    🪙 Tokens: <span id="tokenCount">5</span>
+  </div>
+
+  <h1>La Aldea Restaurada</h1>
+  
+  <div class="yard">
+    <div class="house-container">
+      <div class="level-badge" id="badge1">Nivel 1</div>
+      <div class="house lvl-1" id="house1">
+        <div class="chimney"></div>
+        <div class="window window-left"></div>
+        <div class="window window-right"></div>
+        <div class="bush"></div>
+      </div>
+      <button class="upgrade-btn" id="btn1" onclick="upgradeHouse(1)">✨ Mejorar (1)</button>
+    </div>
+
+    <div class="house-container">
+      <div class="level-badge" id="badge2">Nivel 1</div>
+      <div class="house lvl-1" id="house2">
+        <div class="chimney"></div>
+        <div class="window window-left"></div>
+        <div class="window window-right"></div>
+        <div class="bush"></div>
+      </div>
+      <button class="upgrade-btn" id="btn2" onclick="upgradeHouse(2)">✨ Mejorar (1)</button>
+    </div>
+  </div>
+
+  <script>
+    let levels = { 1: 1, 2: 1 };
+    let tokens = 5; // Comenzamos con 5 tokens
+
+    function updateButtonsState() {
+      // Si no hay tokens, ponemos los botones en gris
+      if (tokens <= 0) {
+        document.getElementById('btn1').classList.add('disabled');
+        document.getElementById('btn2').classList.add('disabled');
+      }
+    }
+
+    function upgradeHouse(id) {
+      if (tokens >= 1) {
+        // Restamos el token
+        tokens--;
+        document.getElementById('tokenCount').innerText = tokens;
+        
+        // Subimos el nivel de la casa
+        levels[id]++;
+        document.getElementById('badge' + id).innerText = 'Nivel ' + levels[id];
+        
+        // Hacemos crecer la casa
+        let house = document.getElementById('house' + id);
+        let newScale = 1 + (levels[id] * 0.1); 
+        house.style.transform = `scale(${newScale})`;
+
+        // ESTA ES LA LÍNEA NUEVA: Le agrega la clase del nivel para que aparezcan los detalles
+        house.classList.add('lvl-' + levels[id]);
+
+        // Verificamos si debemos desactivar los botones
+        updateButtonsState();
+      } else {
+        alert("¡Oh no! No tienes suficientes tokens. Vuelve a SilaBlocks para jugar y ganar más.");
+      }
+    }
   </script>
 </body>
 </html>
