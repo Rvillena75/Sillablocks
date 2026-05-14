@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SilaBlocks</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="screen game-screen">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">El Mundo de las Palabras Perdidas</p>
+      <h1>SilaBlocks</h1>
+    </div>
+    <nav class="top-actions" aria-label="Vistas">
+      <a class="nav-link" href="/aldea">Aldea</a>
+      <span class="socket-pill" id="socketStatus">Conectando</span>
+    </nav>
+  </header>
+
+  <main class="game-layout mission-layout">
+    <section class="mission-scene-panel" aria-label="Escena de misión">
+      <div class="mission-scene" id="missionScene">
+        <div class="forest-sky"></div>
+        <div class="moon-glow"></div>
+        <div class="tree tree-left"></div>
+        <div class="tree tree-mid"></div>
+        <div class="tree tree-right"></div>
+        <div class="forest-depth"></div>
+        <div class="path"></div>
+        <div class="fog fog-back"></div>
+        <div class="fog fog-front"></div>
+
+        <div class="floating-letters" id="floatingLetters" aria-hidden="true"></div>
+
+        <div class="lumo" aria-label="Lumo">
+          <div class="lumo-body">
+            <span class="lumo-eye left"></span>
+            <span class="lumo-eye right"></span>
+          </div>
+          <span class="lumo-spark spark-one"></span>
+          <span class="lumo-spark spark-two"></span>
+        </div>
+
+        <div class="lantern" id="lantern" aria-label="Farol del bosque">
+          <span class="lantern-top"></span>
+          <span class="lantern-light"></span>
+          <span class="lantern-post"></span>
+        </div>
+
+        <div class="scene-copy">
+          <div class="mission-meta">
+            <span id="missionCounter">Misión 1/5</span>
+            <span id="skillLabel">sílabas directas</span>
+          </div>
+          <p class="zone-label" id="zoneLabel">Bosque de las Sílabas</p>
+          <h2 id="prompt">Ayuda a Lumo a encender el farol perdido.</h2>
+          <div class="target-strip">
+            <span>Palabra perdida</span>
+            <strong id="targetText">MAMÁ</strong>
+          </div>
+          <div class="progress-track" aria-label="Progreso de la misión">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <p class="feedback" id="feedback">Escanea un cubo para comenzar.</p>
+        </div>
+
+        <div class="scanned-cubes" id="blockTray" aria-live="polite"></div>
+
+        <div class="reward-ribbon" id="rewardRibbon" aria-label="Recursos actuales">
+          <div>
+            <span class="resource-label">Lúmenes</span>
+            <strong id="lumens">0</strong>
+          </div>
+          <div>
+            <span class="resource-label">Fragmentos</span>
+            <strong id="mapFragments">0</strong>
+          </div>
+          <div>
+            <span class="resource-label">Restaurado</span>
+            <strong id="restoredCount">0</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="control-panel" aria-label="Controles de demo">
+      <section>
+        <h2>Cubos sugeridos</h2>
+        <div class="button-grid" id="availableButtons"></div>
+      </section>
+      <section>
+        <h2>Comandos</h2>
+        <div class="button-grid command-grid" id="commandButtons"></div>
+      </section>
+      <section class="debug-panel">
+        <h2>Estado técnico</h2>
+        <dl>
+          <div><dt>Último recibido</dt><dd id="debugReceived">-</dd></div>
+          <div><dt>Último aceptado</dt><dd id="debugInput">-</dd></div>
+          <div><dt>Bloques</dt><dd id="debugBlocks">[]</dd></div>
+          <div><dt>Texto</dt><dd id="debugText">-</dd></div>
+          <div><dt>Misión</dt><dd id="debugMission">m001</dd></div>
+          <div><dt>Estado</dt><dd id="debugStatus">idle</dd></div>
+          <div><dt>Siguiente</dt><dd id="debugNext">MA</dd></div>
+          <div><dt>WebSocket</dt><dd id="debugSocket">conectando</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

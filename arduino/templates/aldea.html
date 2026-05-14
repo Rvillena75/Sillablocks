@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aldea SilaBlocks</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="screen village-screen">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">El Mundo de las Palabras Perdidas</p>
+      <h1>Aldea Restaurada</h1>
+    </div>
+    <nav class="top-actions" aria-label="Vistas">
+      <a class="nav-link" href="/">Juego</a>
+      <span class="socket-pill" id="villageStatus">Actualizando</span>
+    </nav>
+  </header>
+
+  <main class="village-layout">
+    <section class="village-map" aria-label="Aldea">
+      <div class="village-scene">
+        <div class="village-path" id="pathToVillage"></div>
+        <div class="glowing-tree" id="glowingTree"></div>
+        <div class="small-lantern" id="smallLantern"></div>
+        <div class="house house-one" id="houseOne"></div>
+        <div class="house house-two" id="houseTwo"></div>
+        <div class="tower" id="tower"></div>
+        <div class="bridge" id="bridge"></div>
+        <div class="signpost" id="signpost"></div>
+      </div>
+    </section>
+
+    <aside class="village-summary">
+      <section>
+        <h2>Progreso</h2>
+        <div class="resource-row stacked">
+          <div><span class="resource-label">Misiones</span><strong id="completedMissions">0/5</strong></div>
+          <div><span class="resource-label">Lúmenes</span><strong id="villageLumens">0</strong></div>
+          <div><span class="resource-label">Fragmentos</span><strong id="villageFragments">0</strong></div>
+        </div>
+      </section>
+      <section>
+        <h2>Restauraciones</h2>
+        <ul class="restored-list" id="restoredList"></ul>
+      </section>
+      <section>
+        <div class="shop-header">
+          <h2>Tienda de la Aldea</h2>
+          <button class="control-button shop-refresh" id="refreshShop" type="button">Actualizar</button>
+        </div>
+        <p class="village-message" id="shopMessage" data-tone="info">Cargando mejoras.</p>
+        <div class="shop-list" id="shopList" aria-live="polite"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/static/village.js"></script>
+</body>
+</html>
