@@ -1,10 +1,22 @@
 {
-  "lumens": 0,
-  "fragments": 0,
-  "completed_missions": [],
+  "lumens": 58,
+  "fragments": 2,
+  "completed_missions": [
+    "m001",
+    "m002",
+    "m003",
+    "m004",
+    "m005"
+  ],
   "purchased_items": [],
   "unlocked_zones": [
     "forest"
   ],
-  "restored_items": []
+  "restored_items": [
+    "Farol del Bosque",
+    "Camino de Madera",
+    "Señal del Pueblo",
+    "Mesa de la Plaza",
+    "Ruta del Explorador"
+  ]
 }

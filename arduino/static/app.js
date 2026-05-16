@@ -18,6 +18,7 @@ const ids = {
   lumens: document.getElementById("lumens"),
   mapFragments: document.getElementById("mapFragments"),
   restoredCount: document.getElementById("restoredCount"),
+  speakBtn: document.getElementById("speakBtn"),
   debugReceived: document.getElementById("debugReceived"),
   debugInput: document.getElementById("debugInput"),
   debugBlocks: document.getElementById("debugBlocks"),
@@ -29,6 +30,38 @@ const ids = {
 };
 
 let previousStatus = "idle";
+let lastSpokenMissionId = "";
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "es-CL";
+  utterance.rate = 0.85;
+  utterance.pitch = 1.1;
+  speechSynthesis.cancel();
+  ids.speakBtn.classList.add("speaking");
+  utterance.onend = () => ids.speakBtn.classList.remove("speaking");
+  utterance.onerror = () => ids.speakBtn.classList.remove("speaking");
+  speechSynthesis.speak(utterance);
+}
+
+function speakMission(payload) {
+  const prompt = payload.prompt || "";
+  const target = payload.target_text || "";
+  if (!prompt) return;
+  const fullText = target ? `${prompt} La palabra es ${target}` : prompt;
+  speak(fullText);
+}
+
+if (new URLSearchParams(window.location.search).has("debug")) {
+  document.body.classList.add("debug-visible");
+}
+
+ids.speakBtn.addEventListener("click", () => {
+  const prompt = ids.prompt.textContent;
+  const target = ids.targetText.textContent;
+  speak(target ? `${prompt} La palabra es ${target}` : prompt);
+});
 
 function setSocketStatus(value) {
   ids.socketStatus.textContent = value;
@@ -124,6 +157,12 @@ function render(payload) {
   ids.progressFill.style.width = `${payload.progress_percent || 0}%`;
   ids.feedback.textContent = payload.feedback || "";
   ids.feedback.dataset.status = payload.status || "idle";
+
+  const missionId = payload.mission_id || "";
+  if (missionId && missionId !== lastSpokenMissionId) {
+    lastSpokenMissionId = missionId;
+    window.setTimeout(() => speakMission(payload), 300);
+  }
 
   renderBlocks(blocks);
   renderButtons(payload.available_blocks || []);

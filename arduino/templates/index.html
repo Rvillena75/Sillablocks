@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SilaBlocks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body class="screen game-screen">
@@ -53,32 +56,35 @@
             <span id="missionCounter">Misión 1/5</span>
             <span id="skillLabel">sílabas directas</span>
           </div>
-          <p class="zone-label" id="zoneLabel">Bosque de las Sílabas</p>
-          <h2 id="prompt">Ayuda a Lumo a encender el farol perdido.</h2>
-          <div class="target-strip">
-            <span>Palabra perdida</span>
-            <strong id="targetText">MAMÁ</strong>
+          <div class="scene-copy-body">
+            <p class="zone-label" id="zoneLabel">Bosque de las Sílabas</p>
+            <h2 id="prompt">Ayuda a Lumo a encender el farol perdido.</h2>
+            <div class="progress-track" aria-label="Progreso de la misión">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p class="feedback" id="feedback">Escanea un cubo para comenzar.</p>
+            <button class="speak-btn" id="speakBtn" type="button" aria-label="Escuchar instrucción">🔊</button>
+            <strong id="targetText" class="target-hidden"></strong>
           </div>
-          <div class="progress-track" aria-label="Progreso de la misión">
-            <div class="progress-fill" id="progressFill"></div>
-          </div>
-          <p class="feedback" id="feedback">Escanea un cubo para comenzar.</p>
         </div>
 
         <div class="scanned-cubes" id="blockTray" aria-live="polite"></div>
 
         <div class="reward-ribbon" id="rewardRibbon" aria-label="Recursos actuales">
-          <div>
-            <span class="resource-label">Lúmenes</span>
+          <div class="resource-badge resource-lumens">
+            <span class="resource-icon">⭐</span>
             <strong id="lumens">0</strong>
+            <span class="resource-label">Lúmenes</span>
           </div>
-          <div>
-            <span class="resource-label">Fragmentos</span>
+          <div class="resource-badge resource-fragments">
+            <span class="resource-icon">💎</span>
             <strong id="mapFragments">0</strong>
+            <span class="resource-label">Fragmentos</span>
           </div>
-          <div>
-            <span class="resource-label">Restaurado</span>
+          <div class="resource-badge resource-restored">
+            <span class="resource-icon">🏠</span>
             <strong id="restoredCount">0</strong>
+            <span class="resource-label">Restaurado</span>
           </div>
         </div>
       </div>
