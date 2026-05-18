@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Aldea SilaBlocks</title>
+  <title>Aldea de Lumo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
@@ -13,10 +13,9 @@
   <header class="topbar">
     <div>
       <p class="eyebrow">El Mundo de las Palabras Perdidas</p>
-      <h1>Aldea Restaurada</h1>
+      <h1>Aldea de Lumo</h1>
     </div>
-    <nav class="top-actions" aria-label="Vistas">
-      <a class="nav-link" href="/">Juego</a>
+    <nav class="top-actions" aria-label="Estado de la aldea">
       <span class="socket-pill" id="villageStatus">Actualizando</span>
     </nav>
   </header>
@@ -27,34 +26,63 @@
         <div class="village-path" id="pathToVillage"></div>
         <div class="glowing-tree" id="glowingTree"></div>
         <div class="small-lantern" id="smallLantern"></div>
+        <div class="village-lumo" id="villageLumo" aria-label="Lumo">
+          <span class="village-lumo-body"></span>
+        </div>
+        <p class="village-lumo-line" id="villageLumoLine">Creo que este lugar necesita ayuda.</p>
         <div class="house house-one" id="houseOne"></div>
         <div class="house house-two" id="houseTwo"></div>
         <div class="tower" id="tower"></div>
         <div class="bridge" id="bridge"></div>
         <div class="signpost" id="signpost"></div>
+        <div class="village-mist" id="villageMist" aria-hidden="true"></div>
+        <article class="village-mission-card" id="villageMissionCard" aria-live="polite" hidden>
+          <span class="mission-card-kicker" id="missionCardState">Objeto</span>
+          <h2 id="missionCardTitle">Explora la aldea</h2>
+          <p id="missionCardText">Los objetos apagados guardan palabras perdidas.</p>
+          <dl class="mission-card-details">
+            <div>
+              <dt>Objetivo</dt>
+              <dd id="missionCardObjective">Busca una palabra perdida.</dd>
+            </div>
+            <div>
+              <dt>Recompensa</dt>
+              <dd id="missionCardReward">Lúmenes</dd>
+            </div>
+          </dl>
+          <button class="control-button mission-card-action" id="missionCardAction" type="button">Comenzar</button>
+        </article>
       </div>
     </section>
 
     <aside class="village-summary">
-      <section>
-        <h2>Progreso</h2>
-        <div class="resource-row stacked">
-          <div><span class="resource-label">Misiones</span><strong id="completedMissions">0/5</strong></div>
-          <div><span class="resource-label">Lúmenes</span><strong id="villageLumens">0</strong></div>
-          <div><span class="resource-label">Fragmentos</span><strong id="villageFragments">0</strong></div>
-        </div>
-      </section>
-      <section>
-        <h2>Restauraciones</h2>
-        <ul class="restored-list" id="restoredList"></ul>
-      </section>
-      <section>
-        <div class="shop-header">
-          <h2>Tienda de la Aldea</h2>
+      <div class="village-tabs" role="tablist" aria-label="Aldea">
+        <button class="village-tab is-active" id="shopTab" type="button" role="tab" aria-selected="true" aria-controls="shopPanel" data-tab-target="shopPanel">Tienda</button>
+        <button class="village-tab" id="achievementsTab" type="button" role="tab" aria-selected="false" aria-controls="achievementsPanel" data-tab-target="achievementsPanel">Sala de trofeos</button>
+      </div>
+
+      <section class="village-tab-panel shop-panel is-active" id="shopPanel" role="tabpanel" aria-labelledby="shopTab">
+        <div class="village-panel-heading">
+          <span>
+            <h2>Tienda de la Aldea</h2>
+            <small id="shopSummary">Cargando mejoras</small>
+          </span>
           <button class="control-button shop-refresh" id="refreshShop" type="button">Actualizar</button>
         </div>
         <p class="village-message" id="shopMessage" data-tone="info">Cargando mejoras.</p>
         <div class="shop-list" id="shopList" aria-live="polite"></div>
+      </section>
+
+      <section class="village-tab-panel achievements-panel" id="achievementsPanel" role="tabpanel" aria-labelledby="achievementsTab" hidden>
+        <div class="village-panel-heading">
+          <span>
+            <h2>Sala de trofeos</h2>
+            <small id="achievementSummary">0 desbloqueados</small>
+          </span>
+        </div>
+        <div class="trophy-room">
+          <ul class="achievement-list" id="achievementList"></ul>
+        </div>
       </section>
     </aside>
   </main>

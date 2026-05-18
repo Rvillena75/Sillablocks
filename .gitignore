@@ -5,3 +5,4 @@ __pycache__/
 pytest-cache-files-*/
 sila_server.log
 *.log
+arduino/game_state.json

@@ -44,6 +44,7 @@
           <span class="lumo-spark spark-one"></span>
           <span class="lumo-spark spark-two"></span>
         </div>
+        <p class="lumo-line" id="lumoLine">Vamos a restaurar este lugar.</p>
 
         <div class="lantern" id="lantern" aria-label="Farol del bosque">
           <span class="lantern-top"></span>
@@ -51,42 +52,36 @@
           <span class="lantern-post"></span>
         </div>
 
-        <div class="scene-copy">
-          <div class="mission-meta">
-            <span id="missionCounter">Misión 1/5</span>
-            <span id="skillLabel">sílabas directas</span>
+        <div class="mission-restoration" id="missionRestoration" data-artifact="lantern" data-repair-level="0" aria-label="Objeto a restaurar">
+          <span class="restoration-kicker">Restaurando</span>
+          <strong id="restorationName">Farol perdido</strong>
+          <div class="restoration-artifact" id="restorationArtifact" aria-hidden="true"></div>
+          <div class="restoration-meter" aria-label="Avance de restauración">
+            <span id="restorationMeter"></span>
           </div>
-          <div class="scene-copy-body">
-            <p class="zone-label" id="zoneLabel">Bosque de las Sílabas</p>
-            <h2 id="prompt">Ayuda a Lumo a encender el farol perdido.</h2>
-            <div class="progress-track" aria-label="Progreso de la misión">
-              <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="mission-bottom-hud">
+          <div class="scene-copy">
+            <div class="mission-meta">
+              <span id="missionCounter">Misión 1/5</span>
+              <span id="skillLabel">sílabas directas</span>
             </div>
-            <p class="feedback" id="feedback">Escanea un cubo para comenzar.</p>
-            <button class="speak-btn" id="speakBtn" type="button" aria-label="Escuchar instrucción">🔊</button>
-            <strong id="targetText" class="target-hidden"></strong>
+            <div class="scene-copy-body">
+              <p class="zone-label" id="zoneLabel">Bosque de las Sílabas</p>
+              <h2 id="prompt">Ayuda a Lumo a encender el farol perdido.</h2>
+              <div class="progress-track" aria-label="Progreso de la misión">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <p class="feedback" id="feedback">Escanea un cubo para comenzar.</p>
+              <button class="speak-btn" id="speakBtn" type="button" aria-label="Escuchar instrucción">🔊</button>
+              <strong id="targetText" class="target-hidden"></strong>
+            </div>
           </div>
+
+          <div class="scanned-cubes" id="blockTray" aria-live="polite"></div>
         </div>
 
-        <div class="scanned-cubes" id="blockTray" aria-live="polite"></div>
-
-        <div class="reward-ribbon" id="rewardRibbon" aria-label="Recursos actuales">
-          <div class="resource-badge resource-lumens">
-            <span class="resource-icon">⭐</span>
-            <strong id="lumens">0</strong>
-            <span class="resource-label">Lúmenes</span>
-          </div>
-          <div class="resource-badge resource-fragments">
-            <span class="resource-icon">💎</span>
-            <strong id="mapFragments">0</strong>
-            <span class="resource-label">Fragmentos</span>
-          </div>
-          <div class="resource-badge resource-restored">
-            <span class="resource-icon">🏠</span>
-            <strong id="restoredCount">0</strong>
-            <span class="resource-label">Restaurado</span>
-          </div>
-        </div>
       </div>
     </section>
 

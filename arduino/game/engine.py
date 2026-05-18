@@ -106,6 +106,26 @@ class GameEngine:
     def is_last_mission(self) -> bool:
         return self.current_mission_index == len(self.missions) - 1
 
+    def mission_index_for_id(self, mission_id: str) -> int | None:
+        for index, mission in enumerate(self.missions):
+            if mission.mission_id == mission_id:
+                return index
+        return None
+
+    def select_mission(self, mission_id: str) -> bool:
+        mission_index = self.mission_index_for_id(mission_id)
+        if mission_index is None:
+            return False
+
+        if mission_index != self.current_mission_index:
+            self.current_mission_index = mission_index
+            self.buffer.clear()
+            self.last_ignored_input = None
+
+        self.last_action = "select_mission"
+        self.evaluate_game_state()
+        return True
+
     def is_prefix_of_target(self, blocks: list[str] | None = None) -> bool:
         checked_blocks = self.current_blocks if blocks is None else blocks
         target_blocks = list(self.current_mission().target_blocks)
@@ -198,6 +218,7 @@ class GameEngine:
         self.completed_mission_ids.clear()
         self.rewarded_mission_ids.clear()
         self.restored_items.clear()
+        self.recent_inputs.clear()
         self.buffer.clear()
         self.lumens = 0
         self.map_fragments = 0

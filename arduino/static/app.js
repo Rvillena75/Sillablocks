@@ -15,9 +15,10 @@ const ids = {
   commandButtons: document.getElementById("commandButtons"),
   floatingLetters: document.getElementById("floatingLetters"),
   zoneLabel: document.getElementById("zoneLabel"),
-  lumens: document.getElementById("lumens"),
-  mapFragments: document.getElementById("mapFragments"),
-  restoredCount: document.getElementById("restoredCount"),
+  missionRestoration: document.getElementById("missionRestoration"),
+  restorationName: document.getElementById("restorationName"),
+  restorationMeter: document.getElementById("restorationMeter"),
+  lumoLine: document.getElementById("lumoLine"),
   speakBtn: document.getElementById("speakBtn"),
   debugReceived: document.getElementById("debugReceived"),
   debugInput: document.getElementById("debugInput"),
@@ -30,38 +31,117 @@ const ids = {
 };
 
 let previousStatus = "idle";
-let lastSpokenMissionId = "";
+let previousRepairLevel = 0;
+const restorationByMission = {
+  m001: {
+    artifact: "lantern",
+    name: "Farol perdido",
+    idleLine: "Ese farol está apagado... vamos a devolverle su palabra.",
+    progressLine: "Muy bien, ya vuelve un poco de luz.",
+    successLine: "Buen trabajo. Mira cómo volvió la luz."
+  },
+  m002: {
+    artifact: "path",
+    name: "Camino dormido",
+    idleLine: "El camino necesita recordar sus pasos.",
+    progressLine: "El camino se está despejando.",
+    successLine: "El camino volvió a abrirse."
+  },
+  m003: {
+    artifact: "sign",
+    name: "Señal sin voz",
+    idleLine: "Esta señal perdió lo que quería decir.",
+    progressLine: "La señal empieza a entenderse.",
+    successLine: "La señal ya muestra el camino."
+  },
+  m004: {
+    artifact: "house",
+    name: "Casa de la plaza",
+    idleLine: "Esta casa necesita una palabra para abrirse.",
+    progressLine: "La casa se está arreglando.",
+    successLine: "La plaza ya tiene su casa encendida."
+  },
+  m005: {
+    artifact: "bridge",
+    name: "Puente de la ruta",
+    idleLine: "El puente está incompleto. Reparemos la ruta.",
+    progressLine: "El puente gana nuevas tablas.",
+    successLine: "La ruta quedó lista para explorar."
+  }
+};
+const speechSupported =
+  "speechSynthesis" in window &&
+  "SpeechSynthesisUtterance" in window;
 
-function speak(text) {
-  if (!window.speechSynthesis) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "es-CL";
-  utterance.rate = 0.85;
-  utterance.pitch = 1.1;
-  speechSynthesis.cancel();
-  ids.speakBtn.classList.add("speaking");
-  utterance.onend = () => ids.speakBtn.classList.remove("speaking");
-  utterance.onerror = () => ids.speakBtn.classList.remove("speaking");
-  speechSynthesis.speak(utterance);
+function setSpeechButtonState(state) {
+  ids.speakBtn.classList.toggle("speaking", state === "speaking");
+  ids.speakBtn.classList.toggle("speech-error", state === "error");
+  ids.speakBtn.disabled = state === "unsupported";
+
+  if (state === "unsupported") {
+    ids.speakBtn.title = "Este navegador no tiene voz disponible";
+    ids.speakBtn.setAttribute("aria-label", "Voz no disponible");
+    return;
+  }
+
+  ids.speakBtn.title = "Escuchar instrucción";
+  ids.speakBtn.setAttribute("aria-label", "Escuchar instrucción");
 }
 
-function speakMission(payload) {
-  const prompt = payload.prompt || "";
-  const target = payload.target_text || "";
-  if (!prompt) return;
-  const fullText = target ? `${prompt} La palabra es ${target}` : prompt;
-  speak(fullText);
+function getSpanishVoice() {
+  if (!speechSupported) return null;
+  const voices = window.speechSynthesis.getVoices();
+  return (
+    voices.find((voice) => voice.lang.toLowerCase().startsWith("es-cl")) ||
+    voices.find((voice) => voice.lang.toLowerCase().startsWith("es-")) ||
+    voices[0] ||
+    null
+  );
+}
+
+function speak(text) {
+  const message = text.trim();
+  if (!message || !speechSupported) {
+    setSpeechButtonState("unsupported");
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  const voice = getSpanishVoice();
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  } else {
+    utterance.lang = "es-CL";
+  }
+  utterance.rate = 0.85;
+  utterance.pitch = 1.1;
+  utterance.onstart = () => setSpeechButtonState("speaking");
+  utterance.onend = () => setSpeechButtonState("ready");
+  utterance.onerror = () => setSpeechButtonState("error");
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+  window.setTimeout(() => window.speechSynthesis.speak(utterance), 40);
 }
 
 if (new URLSearchParams(window.location.search).has("debug")) {
   document.body.classList.add("debug-visible");
 }
 
+const requestedMissionId = new URLSearchParams(window.location.search).get("mission");
+
 ids.speakBtn.addEventListener("click", () => {
   const prompt = ids.prompt.textContent;
   const target = ids.targetText.textContent;
   speak(target ? `${prompt} La palabra es ${target}` : prompt);
 });
+
+if (!speechSupported) {
+  setSpeechButtonState("unsupported");
+} else if (window.speechSynthesis.onvoiceschanged !== undefined) {
+  window.speechSynthesis.onvoiceschanged = () => setSpeechButtonState("ready");
+}
 
 function setSocketStatus(value) {
   ids.socketStatus.textContent = value;
@@ -121,11 +201,7 @@ function renderFloatingLetters(payload) {
 }
 
 function renderScene(payload) {
-  const restored = payload.restored_items || [];
   ids.zoneLabel.textContent = payload.zone || "Bosque de las Sílabas";
-  ids.lumens.textContent = payload.lumens ?? 0;
-  ids.mapFragments.textContent = payload.map_fragments ?? 0;
-  ids.restoredCount.textContent = restored.length;
   ids.body.dataset.status = payload.status || "idle";
   ids.missionScene.dataset.status = payload.status || "idle";
   ids.missionScene.classList.toggle("has-blocks", (payload.current_blocks || []).length > 0);
@@ -135,6 +211,44 @@ function renderScene(payload) {
     window.requestAnimationFrame(() => ids.missionScene.classList.add("celebrate"));
   }
   previousStatus = payload.status || "idle";
+}
+
+function repairLevel(payload) {
+  if (payload.status === "success" || payload.status === "demo_complete") {
+    return 3;
+  }
+
+  const total = Math.max(payload.target_block_count || 1, 1);
+  const correct = payload.correct_prefix_count || 0;
+  if (correct <= 0) {
+    return 0;
+  }
+  return Math.min(2, Math.ceil((correct / total) * 2));
+}
+
+function renderRestorationTarget(payload) {
+  const restoration = restorationByMission[payload.mission_id] || restorationByMission.m001;
+  const level = repairLevel(payload);
+
+  ids.missionRestoration.dataset.artifact = restoration.artifact;
+  ids.missionRestoration.dataset.repairLevel = String(level);
+  ids.restorationName.textContent = restoration.name;
+  ids.restorationMeter.style.width = `${Math.round((level / 3) * 100)}%`;
+
+  if (level > previousRepairLevel) {
+    ids.missionRestoration.classList.remove("repair-pulse");
+    void ids.missionRestoration.offsetWidth;
+    ids.missionRestoration.classList.add("repair-pulse");
+  }
+  previousRepairLevel = level;
+
+  if (payload.status === "success" || payload.status === "demo_complete") {
+    ids.lumoLine.textContent = restoration.successLine;
+  } else if (level > 0) {
+    ids.lumoLine.textContent = restoration.progressLine;
+  } else {
+    ids.lumoLine.textContent = restoration.idleLine;
+  }
 }
 
 function renderDebug(payload) {
@@ -158,16 +272,11 @@ function render(payload) {
   ids.feedback.textContent = payload.feedback || "";
   ids.feedback.dataset.status = payload.status || "idle";
 
-  const missionId = payload.mission_id || "";
-  if (missionId && missionId !== lastSpokenMissionId) {
-    lastSpokenMissionId = missionId;
-    window.setTimeout(() => speakMission(payload), 300);
-  }
-
   renderBlocks(blocks);
   renderButtons(payload.available_blocks || []);
   renderFloatingLetters(payload);
   renderScene(payload);
+  renderRestorationTarget(payload);
   renderDebug(payload);
 }
 
@@ -178,6 +287,14 @@ async function sendNfc(value) {
 }
 
 async function loadInitialState() {
+  if (requestedMissionId) {
+    await fetch("/mission/select", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mission_id: requestedMissionId })
+    });
+  }
+
   const response = await fetch("/buffer");
   const payload = await response.json();
   render(payload);

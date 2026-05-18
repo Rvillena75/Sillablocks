@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 import arduino.sila_server as server
-from arduino.game.progress import ProgressStore
+from arduino.game.progress import GameProgress, ProgressStore
 
 
 @pytest.fixture(autouse=True)
@@ -54,10 +54,25 @@ def test_index_and_village_pages_render() -> None:
     assert index.status_code == 200
     assert "Estado técnico" in index.text
     assert "Cubos sugeridos" in index.text
+    assert "missionRestoration" in index.text
+    assert "restorationMeter" in index.text
+    assert "lumoLine" in index.text
+    assert "rewardRibbon" not in index.text
+    assert "resource-lumens" not in index.text
     assert village.status_code == 200
-    assert "Aldea Restaurada" in village.text
+    assert "Aldea de Lumo" in village.text
+    assert "Sala de trofeos" in village.text
     assert "Tienda de la Aldea" in village.text
+    assert "villageLumoLine" in village.text
+    assert "villageMist" in village.text
+    assert "villageMissionCard" in village.text
+    assert "missionCardObjective" in village.text
     assert "shopList" in village.text
+    assert ">Juego<" not in village.text
+    assert "missionCardBuffer" not in village.text
+    assert "missionCardValidate" not in village.text
+    assert "missionCardNext" not in village.text
+    assert "nextMissionCard" not in village.text
 
 
 def complete_current_mission(client: TestClient) -> dict:
@@ -193,6 +208,24 @@ def test_progress_endpoint_returns_initial_progress() -> None:
     }
 
 
+def test_startup_reset_clears_persisted_progress() -> None:
+    progress = GameProgress.default()
+    progress.add_rewards(lumens=99, fragments=2)
+    progress.mark_mission_completed("m001")
+    progress.mark_item_restored("Farol del Bosque")
+    server.progress_store.save(progress)
+    server.load_persisted_progress()
+    assert server.game_engine.lumens == 99
+
+    reset_progress = server.reset_demo_state_on_startup()
+
+    expected = GameProgress.default().to_dict()
+    assert reset_progress.to_dict() == expected
+    assert server.progress_store.load().to_dict() == expected
+    assert server.game_engine.lumens == 0
+    assert server.game_engine.completed_mission_ids == set()
+
+
 def test_completed_mission_is_saved_to_progress_store() -> None:
     client = make_client()
 
@@ -252,6 +285,10 @@ def test_reset_todo_resets_persisted_progress() -> None:
     payload = scan(client, "RESET_TODO")
     progress = client.get("/progress").json()
 
+    assert len(payload["recent_inputs"]) == 1
+    assert payload["recent_inputs"][0]["value"] == "RESET_TODO"
+    assert payload["recent_inputs"][0]["action"] == "reset_all"
+    assert payload["recent_inputs"][0]["accepted"] is True
     assert payload["lumens"] == 0
     assert progress["lumens"] == 0
     assert progress["fragments"] == 0
@@ -426,6 +463,45 @@ def test_next_advances_after_success() -> None:
     assert payload["current_blocks"] == []
     assert payload["status"] == "idle"
     assert payload["available_blocks"] == ["PA", "PÁ", "MA", "SA"]
+
+
+def test_select_mission_advances_to_unlocked_mission() -> None:
+    client = make_client()
+    complete_current_mission(client)
+
+    response = client.post("/mission/select", json={"mission_id": "m002"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["selected"] is True
+    assert payload["mission_id"] == "m002"
+    assert payload["mission_number"] == 2
+    assert payload["current_blocks"] == []
+    assert payload["status"] == "idle"
+
+
+def test_select_mission_rejects_locked_mission() -> None:
+    client = make_client()
+
+    response = client.post("/mission/select", json={"mission_id": "m003"})
+
+    assert response.status_code == 409
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["code"] == "mission_locked"
+    assert server.game_engine.current_mission().mission_id == "m001"
+
+
+def test_select_mission_rejects_unknown_mission() -> None:
+    client = make_client()
+
+    response = client.post("/mission/select", json={"mission_id": "m999"})
+
+    assert response.status_code == 404
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["code"] == "unknown_mission"
 
 
 def test_next_does_not_advance_before_success() -> None:

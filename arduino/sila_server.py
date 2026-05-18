@@ -114,6 +114,10 @@ class BuyRequest(BaseModel):
     item_id: str
 
 
+class MissionSelectRequest(BaseModel):
+    mission_id: str
+
+
 def sync_legacy_state() -> None:
     global current_mission_index, last_input, last_received_input
     global last_ignored_input, last_action, game_status, feedback
@@ -148,6 +152,14 @@ def load_persisted_progress() -> GameProgress:
     return progress
 
 
+def reset_demo_state_on_startup() -> GameProgress:
+    game_engine.reset_runtime()
+    progress = progress_store.reset()
+    apply_progress_to_engine(progress)
+    logger.info("Demo state reset on startup")
+    return progress
+
+
 def build_progress_payload(progress: GameProgress | None = None) -> dict[str, Any]:
     current_progress = progress if progress is not None else progress_store.load()
     payload = current_progress.to_dict()
@@ -172,6 +184,15 @@ def build_buy_payload(
         "progress": build_progress_payload(progress),
         "events": [] if events is None else events,
     }
+
+
+def previous_missions_completed(mission_index: int, progress: GameProgress) -> bool:
+    completed = set(progress.completed_missions)
+    completed.update(game_engine.completed_mission_ids)
+    return all(
+        mission.mission_id in completed
+        for mission in game_engine.missions[:mission_index]
+    )
 
 
 def build_mission_completion_events(
@@ -492,6 +513,40 @@ async def buy_item(request: BuyRequest) -> JSONResponse:
     )
 
 
+@app.post("/mission/select")
+async def select_mission(request: MissionSelectRequest) -> JSONResponse:
+    mission_id = request.mission_id.strip().lower()
+    mission_index = game_engine.mission_index_for_id(mission_id)
+    if mission_index is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "ok": False,
+                "code": "unknown_mission",
+                "message": "Esa misión no existe.",
+                "mission_id": mission_id,
+            },
+        )
+
+    progress = progress_store.load()
+    if not previous_missions_completed(mission_index, progress):
+        return JSONResponse(
+            status_code=409,
+            content={
+                "ok": False,
+                "code": "mission_locked",
+                "message": "Primero restaura el objeto anterior.",
+                "mission_id": mission_id,
+            },
+        )
+
+    game_engine.select_mission(mission_id)
+    sync_legacy_state()
+    state = build_state({"selected": True})
+    await manager.broadcast(state)
+    return JSONResponse(content=state)
+
+
 @app.delete("/buffer")
 async def delete_buffer() -> dict[str, Any]:
     game_engine.last_input = RESET_COMMAND
@@ -503,7 +558,7 @@ async def delete_buffer() -> dict[str, Any]:
     return build_state({"letra": RESET_COMMAND, "valor": RESET_COMMAND})
 
 
-load_persisted_progress()
+reset_demo_state_on_startup()
 
 
 @app.get("/nfc")

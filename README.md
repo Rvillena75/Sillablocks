@@ -21,7 +21,9 @@ El proyecto ya tiene un MVP local funcional:
 - Cinco misiones: `MAMA`, `PAPA`, `CASA`, `MESA`, `BOTA`.
 - Pantalla de mision en `/`.
 - Aldea/tienda en `/aldea`.
-- Progreso persistente en `arduino/game_state.json`.
+- Progreso local de demo en `arduino/game_state.json`, reiniciado al arrancar
+  el servidor.
+- Estado base versionado en `arduino/game_state.example.json`.
 - Inventario de tienda con `GET /shop` y compras con `POST /buy`.
 - Eventos visuales para mision y tienda.
 - Tests automatizados con `pytest`.
@@ -79,27 +81,36 @@ http://<PC_LOCAL_IP>:5000/nfc?letra=MA
 ## Flujo de demo manual
 
 1. Abrir `http://localhost:5000/`.
-2. Escanear o simular:
+2. Si quieres dejar todo en cero antes de presentar:
+
+```powershell
+.\scripts\reset_demo.ps1
+```
+
+El script ejecuta `RESET_TODO`, revisa `/health`, `/buffer` y `/progress`, y
+muestra URLs con la IP local del PC para configurar el telefono.
+
+3. Escanear o simular:
 
 ```powershell
 Invoke-RestMethod "http://localhost:5000/nfc?letra=MA"
 Invoke-RestMethod "http://localhost:5000/nfc?letra=M%C3%81"
 ```
 
-3. Revisar progreso:
+4. Revisar progreso:
 
 ```powershell
 Invoke-RestMethod http://localhost:5000/progress
 ```
 
-4. Abrir `http://localhost:5000/aldea`.
-5. Comprar una mejora si hay recursos:
+5. Abrir `http://localhost:5000/aldea`.
+6. Comprar una mejora si hay recursos:
 
 ```powershell
 Invoke-RestMethod http://localhost:5000/buy -Method Post -ContentType "application/json" -Body '{"item_id":"small_lantern"}'
 ```
 
-6. Resetear demo si se necesita partir limpio:
+7. Resetear demo si se necesita partir limpio:
 
 ```powershell
 Invoke-RestMethod "http://localhost:5000/nfc?letra=RESET_TODO"
@@ -158,7 +169,7 @@ Ejemplo:
 ├── Descripcion del juego/
 ├── arduino/
 │   ├── sila_server.py
-│   ├── game_state.json
+│   ├── game_state.example.json
 │   ├── requirements.txt
 │   ├── rfid_bridge.py
 │   ├── rfid_uid_map.json
@@ -195,5 +206,6 @@ progreso persistente, tienda y compras.
 - No romper `GET /nfc?letra=...`.
 - Mantener `available_blocks` como guia visual, no como filtro duro.
 - Guardar progreso local sin datos personales de ninos.
+- Mantener `arduino/game_state.json` como archivo runtime ignorado por Git.
 - Priorizar demo estable sobre arquitectura compleja.
 - Antes de migrar a Phaser, mantener funcional el MVP HTML actual.
