@@ -774,6 +774,28 @@ async def delete_buffer() -> dict[str, Any]:
 reset_demo_state_on_startup()
 
 
+@app.get("/slots")
+async def receive_slots(
+    s0: str = Query(default=""),
+    s1: str = Query(default=""),
+    s2: str = Query(default=""),
+    s3: str = Query(default=""),
+) -> JSONResponse:
+    """Receive the current state of 4 RFID readers simultaneously.
+    Send empty string for a slot with no block. Called continuously by the Arduino."""
+    game_engine.process_slots([s0, s1, s2, s3])
+    sync_legacy_state()
+    await broadcast_state()
+    return JSONResponse(content=build_state())
+
+
+@app.get("/arcade")
+async def arcade_button() -> JSONResponse:
+    """Physical arcade button pressed. Calls /arcade from the Arduino microswitch.
+    Currently triggers ENTER (validate answer). Change here for future exercises."""
+    return await handle_nfc_value("ENTER")
+
+
 @app.get("/nfc")
 async def receive_nfc_get(letra: str | None = Query(default=None)) -> JSONResponse:
     return await handle_nfc_value(letra or "")

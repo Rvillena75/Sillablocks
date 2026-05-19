@@ -20,6 +20,7 @@ const ids = {
   restorationMeter: document.getElementById("restorationMeter"),
   lumoLine: document.getElementById("lumoLine"),
   speakBtn: document.getElementById("speakBtn"),
+  arcadeBtn: document.getElementById("arcadeBtn"),
   debugReceived: document.getElementById("debugReceived"),
   debugInput: document.getElementById("debugInput"),
   debugBlocks: document.getElementById("debugBlocks"),
@@ -32,6 +33,7 @@ const ids = {
 
 let previousStatus = "idle";
 let previousRepairLevel = 0;
+let lastSpokenMissionId = "";
 const restorationByMission = {
   m001: {
     artifact: "lantern",
@@ -91,9 +93,16 @@ function setSpeechButtonState(state) {
 function getSpanishVoice() {
   if (!speechSupported) return null;
   const voices = window.speechSynthesis.getVoices();
+  const es = voices.filter((v) => v.lang.toLowerCase().startsWith("es"));
+
+  // Prioridad: voces online (Google/Microsoft Natural) > voces locales
   return (
-    voices.find((voice) => voice.lang.toLowerCase().startsWith("es-cl")) ||
-    voices.find((voice) => voice.lang.toLowerCase().startsWith("es-")) ||
+    es.find((v) => /natural/i.test(v.name)) ||          // Edge Natural
+    es.find((v) => /google/i.test(v.name)) ||            // Chrome Google
+    es.find((v) => /online/i.test(v.name)) ||            // cualquier online
+    es.find((v) => !v.localService) ||                   // no-local = online
+    es.find((v) => v.lang.toLowerCase().startsWith("es-cl")) ||
+    es.find((v) => v.lang.toLowerCase().startsWith("es-")) ||
     voices[0] ||
     null
   );
@@ -137,6 +146,22 @@ ids.speakBtn.addEventListener("click", () => {
   speak(target ? `${prompt} La palabra es ${target}` : prompt);
 });
 
+ids.arcadeBtn.addEventListener("click", async () => {
+  ids.arcadeBtn.classList.add("pressed");
+  window.setTimeout(() => ids.arcadeBtn.classList.remove("pressed"), 180);
+  const response = await fetch("/arcade");
+  const payload = await response.json();
+  render(payload);
+});
+
+// Spacebar also triggers the arcade button (testing / accessibility)
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && e.target === document.body) {
+    e.preventDefault();
+    ids.arcadeBtn.click();
+  }
+});
+
 if (!speechSupported) {
   setSpeechButtonState("unsupported");
 } else if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -169,22 +194,27 @@ function renderButtons(values) {
   });
 }
 
-function renderBlocks(blocks) {
+function renderSlots(payload) {
+  const slots = payload.slots || ["", "", "", ""];
   ids.blockTray.replaceChildren();
-  if (!blocks.length) {
-    const empty = document.createElement("span");
-    empty.className = "empty-block";
-    empty.textContent = "Pon los cubos en el camino";
-    ids.blockTray.appendChild(empty);
-    return;
-  }
 
-  blocks.forEach((block, index) => {
-    const chip = document.createElement("span");
-    chip.className = "block-chip physical-cube";
-    chip.style.setProperty("--cube-index", index);
-    chip.textContent = block;
-    ids.blockTray.appendChild(chip);
+  slots.forEach((letter, index) => {
+    const slot = document.createElement("div");
+    const filled = letter.trim() !== "";
+    slot.className = `letter-slot ${filled ? "filled" : "empty"}`;
+    slot.style.setProperty("--slot-index", index);
+
+    const num = document.createElement("span");
+    num.className = "slot-number";
+    num.textContent = index + 1;
+
+    const letterEl = document.createElement("span");
+    letterEl.className = "slot-letter";
+    letterEl.textContent = filled ? letter : "";
+
+    slot.appendChild(num);
+    slot.appendChild(letterEl);
+    ids.blockTray.appendChild(slot);
   });
 }
 
@@ -272,7 +302,16 @@ function render(payload) {
   ids.feedback.textContent = payload.feedback || "";
   ids.feedback.dataset.status = payload.status || "idle";
 
-  renderBlocks(blocks);
+  const missionId = payload.mission_id || "";
+  if (missionId && missionId !== lastSpokenMissionId) {
+    lastSpokenMissionId = missionId;
+    const prompt = payload.prompt || "";
+    const target = payload.target_text || "";
+    const fullText = target ? `${prompt} La palabra es ${target}` : prompt;
+    window.setTimeout(() => speak(fullText), 600);
+  }
+
+  renderSlots(payload);
   renderButtons(payload.available_blocks || []);
   renderFloatingLetters(payload);
   renderScene(payload);

@@ -63,20 +63,50 @@ a {
 
 .topbar h1 {
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  -webkit-text-fill-color: #ffffff;
+  font-size: clamp(38px, 5.2vw, 68px);
+  font-weight: 900;
+  letter-spacing: 1px;
+  line-height: 1;
+  -webkit-text-stroke: 3px rgba(8, 32, 20, 0.65);
+  text-shadow:
+    0 4px 0 rgba(8, 32, 20, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  filter: none;
 }
 
-.topbar .nav-link,
+/* Botón Aldea — tecla dorada 3D */
+.topbar .nav-link {
+  border-color: #a07218;
+  border-bottom: 4px solid #7a5010;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #ffe07a 0%, #e8b840 55%, #c8921a 100%);
+  color: #2a1400;
+  font-weight: 900;
+  font-size: 15px;
+  box-shadow: 0 4px 0 #6a3e08, 0 6px 16px rgba(0, 0, 0, 0.3);
+  transition: transform 80ms ease, box-shadow 80ms ease, border-bottom-width 80ms ease;
+  text-decoration: none;
+}
+
+.topbar .nav-link:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(160deg, #ffec8a 0%, #f0c048 55%, #d89e28 100%);
+  box-shadow: 0 6px 0 #6a3e08, 0 10px 20px rgba(0, 0, 0, 0.3);
+  border-color: #a07218;
+}
+
+.topbar .nav-link:active {
+  transform: translateY(3px);
+  border-bottom-width: 1px;
+  box-shadow: 0 1px 0 #6a3e08, 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
 .topbar .socket-pill {
   border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
   backdrop-filter: blur(4px);
-}
-
-.topbar .nav-link:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .topbar .socket-pill[data-status="conectado"] {
@@ -502,12 +532,12 @@ h2 {
   animation: floatLetter 4.8s ease-in-out infinite;
 }
 
-.floating-letter:nth-child(1) { left: 12%; top: 12%; animation-delay: 0ms; }
-.floating-letter:nth-child(2) { left: 28%; top: 2%; animation-delay: 280ms; }
-.floating-letter:nth-child(3) { left: 45%; top: 15%; animation-delay: 560ms; }
-.floating-letter:nth-child(4) { right: 28%; top: 4%; animation-delay: 840ms; }
-.floating-letter:nth-child(5) { right: 13%; top: 18%; animation-delay: 1120ms; }
-.floating-letter:nth-child(6) { left: 58%; top: 32%; animation-delay: 1400ms; }
+.floating-letter:nth-child(1) { left: 12%; top: 12%; animation-delay: 0ms;    background: rgba(255, 230, 139, 0.95); border-color: rgba(140, 100, 20, 0.85); }
+.floating-letter:nth-child(2) { left: 28%; top: 2%;  animation-delay: 280ms;  background: rgba(180, 230, 255, 0.95); border-color: rgba(30, 100, 160, 0.8);  color: #0a2a4a; }
+.floating-letter:nth-child(3) { left: 45%; top: 15%; animation-delay: 560ms;  background: rgba(190, 255, 185, 0.95); border-color: rgba(30, 120, 60, 0.8);   color: #0a2e14; }
+.floating-letter:nth-child(4) { right: 28%; top: 4%; animation-delay: 840ms;  background: rgba(255, 185, 185, 0.95); border-color: rgba(160, 30, 30, 0.8);   color: #3a0a0a; }
+.floating-letter:nth-child(5) { right: 13%; top: 18%; animation-delay: 1120ms; background: rgba(230, 190, 255, 0.95); border-color: rgba(100, 30, 160, 0.8);  color: #280a3a; }
+.floating-letter:nth-child(6) { left: 58%; top: 32%; animation-delay: 1400ms; background: rgba(255, 225, 160, 0.95); border-color: rgba(150, 90, 10, 0.8);   color: #2a1a04; }
 
 .lumo {
   left: clamp(24px, 7vw, 84px);
@@ -642,31 +672,41 @@ h2 {
   z-index: 8;
   display: grid;
   width: 190px;
-  gap: 8px;
-  padding: 12px;
-  border: 2px solid rgba(92, 62, 31, 0.24);
-  border-bottom-width: 5px;
-  border-radius: 8px;
-  background: rgba(255, 252, 232, 0.94);
-  box-shadow: 0 12px 26px rgba(16, 53, 38, 0.18);
+  gap: 0;
+  padding: 0;
+  border: 2px solid #c8922a;
+  border-radius: 14px;
+  background: transparent;
+  box-shadow: 0 10px 28px rgba(10, 30, 10, 0.35),
+              0 0 0 1px rgba(255, 210, 100, 0.2);
+  overflow: hidden;
 }
 
 .restoration-kicker {
-  color: #8d5a16;
-  font-size: 11px;
+  display: block;
+  background: linear-gradient(135deg, #1a4a34, #1a7080);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 7px 12px;
 }
 
 .mission-restoration strong {
-  color: #173a29;
-  font-size: 18px;
-  line-height: 1.05;
+  display: block;
+  background: linear-gradient(160deg, #fffbea, #fff3cc);
+  color: #1a3020;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.15;
+  padding: 8px 12px 4px;
 }
 
 .restoration-artifact {
   position: relative;
   justify-self: center;
+  margin: 6px auto 4px;
   width: 92px;
   height: 86px;
   filter: grayscale(1);
@@ -780,10 +820,11 @@ h2 {
 }
 
 .restoration-meter {
-  height: 9px;
+  height: 10px;
   overflow: hidden;
-  border-radius: 999px;
-  background: rgba(92, 62, 31, 0.16);
+  border-radius: 0 0 10px 10px;
+  background: rgba(180, 140, 60, 0.2);
+  margin: 0;
 }
 
 .restoration-meter span {
@@ -801,9 +842,26 @@ h2 {
   bottom: 5%;
   z-index: 10;
   display: grid;
-  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr) auto;
   align-items: stretch;
-  gap: 18px;
+  gap: 14px;
+}
+
+.arcade-btn-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.arcade-btn-label {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 244, 196, 0.7);
 }
 
 .scene-copy {
@@ -814,45 +872,78 @@ h2 {
   width: 100%;
   align-self: stretch;
   padding: 0;
-  border: 3px solid #c8922a;
+  border: 3px solid #d4a030;
   border-radius: 20px;
   background: transparent;
   box-shadow:
-    0 0 0 1px rgba(255, 210, 100, 0.25),
-    0 16px 32px rgba(10, 30, 20, 0.4);
+    0 0 0 1px rgba(255, 220, 110, 0.3),
+    inset 0 0 0 1px rgba(255, 230, 130, 0.1),
+    0 16px 36px rgba(8, 24, 16, 0.5);
   overflow: hidden;
 }
 
 /* Header coloreado con info de misión */
 .scene-copy .mission-meta {
-  background: linear-gradient(135deg, #1a4a34 0%, #1a7080 100%);
+  background: linear-gradient(135deg, #12291e 0%, #1a6070 100%);
   color: #fff;
-  padding: 10px 14px;
+  padding: 9px 14px;
   margin: 0;
   border-radius: 0;
+  position: relative;
+}
+
+/* Estrellas decorativas en el header */
+.scene-copy .mission-meta::before {
+  content: "✦";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: rgba(255, 210, 80, 0.35);
+  pointer-events: none;
 }
 
 .scene-copy .mission-meta span {
   color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
+  letter-spacing: 0.5px;
 }
 
-/* Cuerpo del panel: pergamino cálido */
+/* Número de misión con badge */
+.scene-copy .mission-meta span:first-child {
+  background: rgba(255, 210, 80, 0.18);
+  border: 1px solid rgba(255, 210, 80, 0.3);
+  border-radius: 20px;
+  padding: 2px 8px;
+  color: #ffe07a;
+  font-size: 11px;
+}
+
+/* Cuerpo del panel: pergamino cálido con textura */
 .scene-copy-body {
-  padding: 10px 14px 14px;
-  background: linear-gradient(160deg, #fffbea 0%, #fff3cc 100%);
+  padding: 12px 16px 16px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 28px,
+      rgba(180, 140, 60, 0.06) 28px,
+      rgba(180, 140, 60, 0.06) 29px
+    ),
+    linear-gradient(160deg, #fffbea 0%, #fff3cc 100%);
   display: grid;
-  gap: 7px;
+  gap: 8px;
   text-align: center;
 }
 
 .scene-copy h2 {
-  color: #1a3020;
-  font-size: clamp(15px, 1.8vw, 21px);
-  line-height: 1.3;
+  color: #1a2e18;
+  font-size: clamp(16px, 2vw, 23px);
+  line-height: 1.28;
   font-weight: 900;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .target-hidden {
@@ -959,13 +1050,14 @@ h2 {
   justify-self: center;
   padding: 4px 14px;
   border-radius: 20px;
-  background: rgba(26, 110, 70, 0.12);
-  border: 1px solid rgba(26, 110, 70, 0.22);
-  color: #1a5038;
-  font-size: 11px;
+  background: linear-gradient(135deg, #1a5a3a, #1a7060);
+  border: 1px solid rgba(80, 220, 160, 0.25);
+  color: #a8f0cc;
+  font-size: 10px;
   font-weight: 900;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(10, 60, 40, 0.3);
 }
 
 .mission-meta .speak-btn {
@@ -1049,51 +1141,189 @@ h2 {
   position: relative;
   z-index: 10;
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-end;
+  gap: 12px;
   width: 100%;
-  min-height: 168px;
-  padding: 18px 20px;
-  border: 2px dashed rgba(255, 244, 196, 0.75);
-  border-radius: 16px;
-  background: rgba(32, 58, 26, 0.42);
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.12);
+  min-height: 160px;
+  padding: 16px 12px 20px;
+  border: 2px dashed rgba(255, 244, 196, 0.5);
+  border-radius: 20px;
+  background: rgba(20, 46, 20, 0.38);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.14);
 }
 
-.scanned-cubes .block-chip,
-.scanned-cubes .empty-block {
+/* ── 4 ranuras RFID ── */
+.letter-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 118px;
+  max-width: 130px;
+  padding-bottom: 10px;
+  border-radius: 14px;
   position: relative;
-  width: auto;
-  min-width: 100px;
-  height: 96px;
-  font-size: 40px;
+}
+
+.letter-slot.empty {
+  border: 3px dashed rgba(255, 244, 196, 0.38);
+  background: rgba(255, 255, 255, 0.05);
+  animation: slotPulse 2.8s ease-in-out infinite;
+  animation-delay: calc(var(--slot-index, 0) * 220ms);
+}
+
+@keyframes slotPulse {
+  0%, 100% { border-color: rgba(255, 244, 196, 0.32); box-shadow: none; }
+  50%       { border-color: rgba(255, 244, 196, 0.7);  box-shadow: inset 0 0 16px rgba(255, 244, 196, 0.08), 0 0 12px rgba(255, 230, 100, 0.12); }
+}
+
+.letter-slot.empty::before {
+  content: "· · ·";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  font-size: 20px;
+  letter-spacing: 6px;
+  color: rgba(255, 244, 196, 0.28);
+  pointer-events: none;
+}
+
+.letter-slot.filled {
   border: 3px solid #8b652c;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent 40%),
     #e8b84f;
   box-shadow:
-    inset -8px -8px 0 rgba(91, 61, 19, 0.16),
+    inset -6px -6px 0 rgba(91, 61, 19, 0.18),
     0 10px 0 #8b652c,
-    0 16px 26px rgba(16, 45, 33, 0.34);
+    0 14px 26px rgba(16, 45, 33, 0.38);
   transform: translateY(-10px);
+  animation: slotFill 240ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.scanned-cubes .block-chip {
-  animation: cubeDrop 260ms ease-out both;
-  animation-delay: calc(var(--cube-index) * 70ms);
+.slot-number {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  position: absolute;
+  top: 8px;
 }
 
-.scanned-cubes .empty-block {
+.letter-slot.empty .slot-number {
+  color: rgba(255, 244, 196, 0.4);
+}
+
+.letter-slot.filled .slot-number {
+  color: rgba(80, 50, 10, 0.55);
+}
+
+.slot-letter {
+  font-size: clamp(38px, 5.5vw, 60px);
+  font-weight: 900;
+  line-height: 1;
+  color: #2a1a08;
+}
+
+@keyframes slotFill {
+  from { opacity: 0; transform: translateY(-24px) scale(0.65); }
+  to   { opacity: 1; transform: translateY(-10px) scale(1); }
+}
+
+/* ── Botón Arcade ── */
+.arcade-btn {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+  flex-shrink: 0;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
+  transition: filter 80ms ease;
+}
+
+.arcade-btn::after {
+  /* Anillo exterior oscuro (placa de montaje) */
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 100%, #1a0000, #3a0000 60%, #550000);
+  z-index: -1;
+  box-shadow:
+    0 8px 0 #1a0000,
+    0 12px 28px rgba(0, 0, 0, 0.7);
+}
+
+.arcade-btn-surface {
+  display: block;
   width: 100%;
-  min-height: 80px;
-  border-color: rgba(255, 244, 196, 0.36);
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 20px;
-  box-shadow: none;
-  transform: none;
+  height: 100%;
+  border-radius: 50%;
+  /* Superficie roja brillante */
+  background:
+    radial-gradient(circle at 38% 30%, rgba(255, 130, 130, 0.9) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, #ee1111 0%, #cc0000 50%, #880000 100%);
+  border: 3px solid #660000;
+  box-shadow:
+    inset 0 3px 6px rgba(255, 255, 255, 0.25),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.35),
+    0 0 0 6px #5a0000;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+  position: relative;
+  overflow: hidden;
+  animation: arcadeIdle 3.5s ease-in-out infinite;
+}
+
+@keyframes arcadeIdle {
+  0%, 100% { box-shadow: inset 0 3px 6px rgba(255,255,255,0.25), inset 0 -4px 8px rgba(0,0,0,0.35), 0 0 0 6px #5a0000; }
+  50%       { box-shadow: inset 0 3px 6px rgba(255,255,255,0.25), inset 0 -4px 8px rgba(0,0,0,0.35), 0 0 0 6px #5a0000, 0 0 18px rgba(255, 60, 60, 0.5); }
+}
+
+/* Reflejo estático en la superficie */
+.arcade-btn-surface::before {
+  content: "";
+  position: absolute;
+  top: 14%;
+  left: 22%;
+  width: 38%;
+  height: 22%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+/* Presionado — la superficie se hunde */
+.arcade-btn:active .arcade-btn-surface,
+.arcade-btn.pressed .arcade-btn-surface {
+  transform: translateY(6px) scale(0.95);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.15),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.25),
+    0 0 0 6px #5a0000;
+}
+
+.arcade-btn:active {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+/* Glow rojo cuando hay éxito */
+.mission-scene[data-status="success"] .arcade-btn-surface,
+.mission-scene[data-status="demo_complete"] .arcade-btn-surface {
+  animation: arcadeGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes arcadeGlow {
+  from { box-shadow: inset 0 3px 6px rgba(255,255,255,0.25), inset 0 -4px 8px rgba(0,0,0,0.35), 0 0 0 6px #5a0000; }
+  to   { box-shadow: inset 0 3px 6px rgba(255,255,255,0.25), inset 0 -4px 8px rgba(0,0,0,0.35), 0 0 0 6px #5a0000, 0 0 28px rgba(255, 60, 60, 0.9); }
 }
 
 .mission-scene[data-status="success"],

@@ -45,10 +45,14 @@ class ProcessedInput:
         return not self.accepted
 
 
+EMPTY_SLOTS: list[str] = ["", "", "", ""]
+
+
 @dataclass
 class GameEngine:
     missions: list[Mission] = field(default_factory=lambda: list(MISSIONS))
     buffer: BlockBuffer = field(default_factory=BlockBuffer)
+    slots: list[str] = field(default_factory=lambda: ["", "", "", ""])
     current_mission_index: int = 0
     completed_mission_ids: set[str] = field(default_factory=set)
     rewarded_mission_ids: set[str] = field(default_factory=set)
@@ -67,8 +71,26 @@ class GameEngine:
     def current_blocks(self) -> list[str]:
         return self.buffer.blocks
 
+    def _sync_slots_from_buffer(self) -> None:
+        """Keep slots in sync when using sequential /nfc input."""
+        buf = self.buffer.copy()
+        self.slots = (buf + ["", "", "", ""])[:4]
+
+    def process_slots(self, slot_values: list[str]) -> None:
+        """Update state from 4 simultaneous RFID readers. Empty string = no block."""
+        if self.status in {"demo_complete"}:
+            return
+        normalized = [v.strip().upper() for v in slot_values]
+        self.slots = (normalized + ["", "", "", ""])[:4]
+        blocks = [s for s in self.slots if s]
+        self.buffer.set_blocks(blocks)
+        self.last_received_input = ",".join(self.slots)
+        self.last_action = "slots"
+        self.evaluate_game_state()
+
     def reset_runtime(self) -> None:
         self.buffer.clear()
+        self.slots = ["", "", "", ""]
         self.current_mission_index = 0
         self.completed_mission_ids.clear()
         self.rewarded_mission_ids.clear()
@@ -209,6 +231,7 @@ class GameEngine:
     def reset_current_mission(self) -> None:
         self.completed_mission_ids.discard(self.current_mission().mission_id)
         self.buffer.clear()
+        self.slots = ["", "", "", ""]
         self.last_ignored_input = None
         self.last_action = "reset"
         self.evaluate_game_state()
@@ -220,6 +243,7 @@ class GameEngine:
         self.restored_items.clear()
         self.recent_inputs.clear()
         self.buffer.clear()
+        self.slots = ["", "", "", ""]
         self.lumens = 0
         self.map_fragments = 0
         self.last_ignored_input = None
@@ -241,6 +265,7 @@ class GameEngine:
 
         self.current_mission_index += 1
         self.buffer.clear()
+        self.slots = ["", "", "", ""]
         self.last_ignored_input = None
         self.last_action = "next"
         self.evaluate_game_state()
@@ -254,6 +279,7 @@ class GameEngine:
 
         self.current_mission_index -= 1
         self.buffer.clear()
+        self.slots = ["", "", "", ""]
         self.last_ignored_input = None
         self.last_action = "previous"
         self.evaluate_game_state()
@@ -295,6 +321,7 @@ class GameEngine:
             self.last_input = value
             self.evaluate_game_state()
 
+        self._sync_slots_from_buffer()
         self.remember_input(value, self.last_action, accepted)
         return ProcessedInput(value=value, action=self.last_action, accepted=accepted)
 
@@ -349,6 +376,7 @@ class GameEngine:
             ),
             "expected_next_block": self.expected_next_block(),
             "has_block_mismatch": bool(self.current_blocks) and not self.is_prefix_of_target(),
+            "slots": list(self.slots),
             "status": self.status,
             "feedback": self.feedback,
             "mission": mission.as_dict(),

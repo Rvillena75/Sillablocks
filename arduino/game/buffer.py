@@ -21,5 +21,8 @@ class BlockBuffer:
     def text(self) -> str:
         return "".join(self.blocks)
 
+    def set_blocks(self, blocks: list[str]) -> None:
+        self.blocks = list(blocks)
+
     def copy(self) -> list[str]:
         return list(self.blocks)
