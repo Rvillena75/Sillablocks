@@ -1,7 +1,8 @@
 # SilaBlocks
 
-SilaBlocks es un prototipo fisico-digital para practicar lectura inicial. El
-nino usa cubos fisicos con NFC/RFID para construir silabas y palabras; el PC
+SilaBlocks es un prototipo fisico-digital para practicar lectura inicial. En el
+MVP actual, el nino usa cubos fisicos con NFC/RFID de letras individuales para
+construir palabras; el PC
 recibe esos inputs por red local y muestra una experiencia visual con misiones,
 recompensas y una aldea donde se gastan recursos.
 
@@ -23,6 +24,8 @@ El proyecto ya tiene un MVP local funcional:
 - Aldea/tienda en `/aldea`.
 - Progreso local de demo en `arduino/game_state.json`, reiniciado al arrancar
   el servidor.
+- Estado inicial de pruebas con 99 Lumenes y 99 Fragmentos para poder validar
+  compras y decoraciones sin tener que completar todo el flujo antes.
 - Estado base versionado en `arduino/game_state.example.json`.
 - Inventario de tienda con `GET /shop` y compras con `POST /buy`.
 - Eventos visuales para mision y tienda.
@@ -34,9 +37,13 @@ El stack futuro definido para el frontend de juego es:
 Phaser 4 + TypeScript + Vite
 ```
 
-Por ahora, el frontend activo sigue siendo HTML/CSS/JavaScript servido por
-FastAPI. La migracion a Phaser debe hacerse despues de estabilizar el loop
-misiones-recompensas-aldea.
+Ya existe una app híbrida en `frontend/`: React/HTML/CSS maneja la interfaz
+compleja y Phaser 4 maneja la escena jugable del bosque. El frontend activo para
+demo estable sigue siendo HTML/CSS/JavaScript servido por FastAPI en `/` y
+`/aldea`; la app React + Phaser se corre aparte durante desarrollo y debe
+alcanzar paridad antes de reemplazarlo.
+Tambien existe un experimento visual en `frontend-pixi/` para comparar PixiJS
+como alternativa mas flexible para una experiencia 2D infantil y llamativa.
 
 ## Requisitos
 
@@ -70,13 +77,55 @@ http://localhost:5000
 Para usar un telefono en la misma red WiFi, abrir la URL con la IP local del PC:
 
 ```txt
-http://<PC_LOCAL_IP>:5000/nfc?letra=MA
+http://<PC_LOCAL_IP>:5000/nfc?letra=M
 ```
 
 ## Pantallas principales
 
 - `http://localhost:5000/`: mision actual.
 - `http://localhost:5000/aldea`: aldea y tienda.
+
+## Ejecutar frontend Phaser
+
+Primero deja corriendo FastAPI en `http://localhost:5000`. En otra terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Vite queda en:
+
+```txt
+http://localhost:5173
+```
+
+El dev server usa proxy local hacia FastAPI, por lo que Phaser consume los mismos
+endpoints reales: `/buffer`, `/progress`, `/shop`, `/buy`, `/nfc` y `/ws`.
+
+La escena Phaser se limita al mundo visual: bosque, Lumo, farol, niebla, cubos y
+animaciones. Header, panel de mision, cubos sugeridos, acciones, debug, aldea y
+tienda viven en React/HTML/CSS.
+
+## Ejecutar frontend PixiJS
+
+Primero deja corriendo FastAPI en `http://localhost:5000`. En otra terminal:
+
+```powershell
+cd frontend-pixi
+npm install
+npm run dev
+```
+
+Vite queda en:
+
+```txt
+http://localhost:5174
+```
+
+Este prototipo usa PixiJS para probar una direccion visual mas ilustrada:
+bosque, Lumo, farol, cubos fisicos, letras flotantes y feedback animado.
 
 ## Flujo de demo manual
 
@@ -93,8 +142,10 @@ muestra URLs con la IP local del PC para configurar el telefono.
 3. Escanear o simular:
 
 ```powershell
-Invoke-RestMethod "http://localhost:5000/nfc?letra=MA"
-Invoke-RestMethod "http://localhost:5000/nfc?letra=M%C3%81"
+Invoke-RestMethod "http://localhost:5000/nfc?letra=M"
+Invoke-RestMethod "http://localhost:5000/nfc?letra=A"
+Invoke-RestMethod "http://localhost:5000/nfc?letra=M"
+Invoke-RestMethod "http://localhost:5000/nfc?letra=A"
 ```
 
 4. Revisar progreso:
@@ -165,7 +216,16 @@ Ejemplo:
 ├── plan_frontend.md
 ├── docs/
 │   ├── estado_actual.md
+│   ├── contrato_eventos.md
 │   └── proximos_pasos.md
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
+├── frontend-pixi/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
 ├── Descripcion del juego/
 ├── arduino/
 │   ├── sila_server.py

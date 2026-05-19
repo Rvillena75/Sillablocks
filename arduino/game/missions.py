@@ -91,7 +91,7 @@ MISSIONS: list[Mission] = [
 FEEDBACK_EMPTY = "Escanea un cubo para comenzar."
 FEEDBACK_IN_PROGRESS = "Vas bien. Falta una parte."
 FEEDBACK_SUCCESS_TEMPLATE = "Muy bien. Reconstruiste la palabra {target_text}."
-FEEDBACK_SUCCESS = FEEDBACK_SUCCESS_TEMPLATE.format(target_text="MAMÁ")
+FEEDBACK_SUCCESS = FEEDBACK_SUCCESS_TEMPLATE.format(target_text="MAMA")
 FEEDBACK_TRY_AGAIN = "Casi. Prueba otra combinación."
 FEEDBACK_KEEP_TRYING = "Sigue probando con los cubos."
 FEEDBACK_WRONG_BLOCK = "Casi. Revisa el último cubo y prueba otra combinación."

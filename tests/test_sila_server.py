@@ -92,7 +92,7 @@ def complete_current_mission(client: TestClient) -> dict:
 
 def test_reset_leaves_empty_buffer_and_initial_state() -> None:
     client = make_client()
-    scan(client, "MA")
+    scan(client, "M")
 
     payload = scan(client, "RESET")
 
@@ -102,14 +102,16 @@ def test_reset_leaves_empty_buffer_and_initial_state() -> None:
     assert payload["feedback"] == server.FEEDBACK_EMPTY
 
 
-def test_ma_and_accented_ma_produce_success() -> None:
+def test_letters_mama_produce_success() -> None:
     client = make_client()
 
-    scan(client, "MA")
-    payload = scan(client, "MÁ")
+    scan(client, "M")
+    scan(client, "A")
+    scan(client, "M")
+    payload = scan(client, "A")
 
-    assert payload["current_blocks"] == ["MA", "MÁ"]
-    assert payload["current_text"] == "MAMÁ"
+    assert payload["current_blocks"] == ["M", "A", "M", "A"]
+    assert payload["current_text"] == "MAMA"
     assert payload["status"] == "success"
     assert payload["feedback"] == server.FEEDBACK_SUCCESS
     assert payload["progress_percent"] == 100
@@ -117,45 +119,45 @@ def test_ma_and_accented_ma_produce_success() -> None:
     assert payload["restored_items"] == ["Farol del Bosque"]
 
 
-def test_ma_and_ma_do_not_produce_success_after_enter() -> None:
+def test_partial_mama_does_not_produce_success_after_enter() -> None:
     client = make_client()
 
-    scan(client, "MA")
-    scan(client, "MA")
+    scan(client, "M")
+    scan(client, "A")
     payload = scan(client, "ENTER")
 
-    assert payload["current_blocks"] == ["MA", "MA"]
-    assert payload["current_text"] == "MAMA"
+    assert payload["current_blocks"] == ["M", "A"]
+    assert payload["current_text"] == "MA"
     assert payload["status"] == "try_again"
     assert payload["feedback"] == server.FEEDBACK_TRY_AGAIN
     assert payload["progress_percent"] == 50
-    assert payload["expected_next_block"] == "MÁ"
+    assert payload["expected_next_block"] == "M"
 
 
 def test_delete_removes_last_block_not_last_character() -> None:
     client = make_client()
 
-    scan(client, "MA")
-    scan(client, "PA")
+    scan(client, "M")
+    scan(client, "A")
     payload = scan(client, "BORRAR")
 
-    assert payload["current_blocks"] == ["MA"]
-    assert payload["current_text"] == "MA"
+    assert payload["current_blocks"] == ["M"]
+    assert payload["current_text"] == "M"
     assert payload["status"] == "in_progress"
 
 
 def test_any_normal_input_is_appended_even_if_not_suggested_for_mission() -> None:
     client = make_client()
 
-    scan(client, "MA")
+    scan(client, "M")
     payload_one = scan(client, "1")
     payload_g = scan(client, "G")
 
-    assert payload_one["current_blocks"] == ["MA", "1"]
+    assert payload_one["current_blocks"] == ["M", "1"]
     assert payload_one["action"] == "append"
     assert payload_one["accepted"] is True
     assert payload_one["status"] == "try_again"
-    assert payload_g["current_blocks"] == ["MA", "1", "G"]
+    assert payload_g["current_blocks"] == ["M", "1", "G"]
     assert payload_g["action"] == "append"
     assert payload_g["accepted"] is True
     assert payload_g["status"] == "try_again"
@@ -164,12 +166,14 @@ def test_any_normal_input_is_appended_even_if_not_suggested_for_mission() -> Non
 def test_extra_block_after_success_does_not_break_mission() -> None:
     client = make_client()
 
-    scan(client, "MA")
-    scan(client, "MÁ")
-    payload = scan(client, "PA")
+    scan(client, "M")
+    scan(client, "A")
+    scan(client, "M")
+    scan(client, "A")
+    payload = scan(client, "P")
 
-    assert payload["current_blocks"] == ["MA", "MÁ"]
-    assert payload["current_text"] == "MAMÁ"
+    assert payload["current_blocks"] == ["M", "A", "M", "A"]
+    assert payload["current_text"] == "MAMA"
     assert payload["status"] == "success"
     assert payload["action"] == "ignored_after_success"
     assert payload["accepted"] is False
@@ -177,18 +181,18 @@ def test_extra_block_after_success_does_not_break_mission() -> None:
 
 def test_buffer_exposes_game_state_fields() -> None:
     client = make_client()
-    scan(client, "MA")
+    scan(client, "M")
 
     response = client.get("/buffer")
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["current_blocks"] == ["MA"]
-    assert payload["current_text"] == "MA"
+    assert payload["current_blocks"] == ["M"]
+    assert payload["current_text"] == "M"
     assert payload["status"] == "in_progress"
     assert payload["feedback"] == server.FEEDBACK_IN_PROGRESS
     assert payload["zone"] == "Bosque de las Sílabas"
-    assert payload["skill"] == "sílabas directas"
+    assert payload["skill"] == "letras individuales"
     assert payload["rewards"] == {
         "lumens": 99,
         "map_fragments": 99,
@@ -249,14 +253,16 @@ def test_completed_mission_is_saved_to_progress_store() -> None:
 def test_completed_mission_returns_visual_reward_events() -> None:
     client = make_client()
 
-    scan(client, "MA")
-    payload = scan(client, "MÁ")
+    scan(client, "M")
+    scan(client, "A")
+    scan(client, "M")
+    payload = scan(client, "A")
 
     assert payload["events"] == [
         {
             "type": "mission_completed",
             "mission_id": "m001",
-            "target_text": "MAMÁ",
+            "target_text": "MAMA",
         },
         {
             "type": "reward_granted",
@@ -276,7 +282,7 @@ def test_progress_does_not_duplicate_rewards_after_success() -> None:
     client = make_client()
 
     complete_current_mission(client)
-    payload = scan(client, "PA")
+    payload = scan(client, "P")
     assert payload["events"] == []
 
     payload = client.get("/progress").json()
@@ -326,8 +332,10 @@ def test_third_completed_mission_event_grants_fragment() -> None:
     complete_current_mission(client)
     scan(client, "SIGUIENTE")
 
-    scan(client, "CA")
-    payload = scan(client, "SA")
+    scan(client, "C")
+    scan(client, "A")
+    scan(client, "S")
+    payload = scan(client, "A")
 
     reward_event = next(event for event in payload["events"] if event["type"] == "reward_granted")
     assert reward_event == {
@@ -568,7 +576,7 @@ def test_next_advances_after_success() -> None:
     assert payload["completed_missions"] == 1
     assert payload["current_blocks"] == []
     assert payload["status"] == "idle"
-    assert payload["available_blocks"] == ["PA", "PÁ", "MA", "SA"]
+    assert payload["available_blocks"] == ["P", "A", "M", "S"]
 
 
 def test_select_mission_advances_to_unlocked_mission() -> None:
@@ -612,13 +620,13 @@ def test_select_mission_rejects_unknown_mission() -> None:
 
 def test_next_does_not_advance_before_success() -> None:
     client = make_client()
-    scan(client, "MA")
+    scan(client, "M")
 
     payload = scan(client, "SIGUIENTE")
 
     assert payload["mission_id"] == "m001"
     assert payload["mission_number"] == 1
-    assert payload["current_blocks"] == ["MA"]
+    assert payload["current_blocks"] == ["M"]
     assert payload["status"] == "in_progress"
     assert payload["feedback"] == server.FEEDBACK_NEXT_BLOCKED
     assert payload["accepted"] is False
@@ -628,7 +636,7 @@ def test_reset_restarts_current_mission_without_returning_to_first() -> None:
     client = make_client()
     complete_current_mission(client)
     scan(client, "SIGUIENTE")
-    scan(client, "PA")
+    scan(client, "P")
 
     payload = scan(client, "RESET")
 
@@ -643,7 +651,7 @@ def test_reset_all_returns_to_first_mission() -> None:
     client = make_client()
     complete_current_mission(client)
     scan(client, "SIGUIENTE")
-    scan(client, "PA")
+    scan(client, "P")
 
     payload = scan(client, "RESET_TODO")
 
@@ -659,11 +667,11 @@ def test_reset_all_returns_to_first_mission() -> None:
 def test_post_nfc_accepts_json_body() -> None:
     client = make_client()
 
-    response = client.post("/nfc", json={"letra": "MA"})
+    response = client.post("/nfc", json={"letra": "M"})
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["current_blocks"] == ["MA"]
+    assert payload["current_blocks"] == ["M"]
     assert payload["action"] == "append"
 
 
@@ -672,12 +680,14 @@ def test_papa_validates_correctly_in_second_mission() -> None:
     complete_current_mission(client)
     scan(client, "SIGUIENTE")
 
-    scan(client, "PA")
-    payload = scan(client, "PÁ")
+    scan(client, "P")
+    scan(client, "A")
+    scan(client, "P")
+    payload = scan(client, "A")
 
     assert payload["mission_id"] == "m002"
-    assert payload["current_blocks"] == ["PA", "PÁ"]
-    assert payload["current_text"] == "PAPÁ"
+    assert payload["current_blocks"] == ["P", "A", "P", "A"]
+    assert payload["current_text"] == "PAPA"
     assert payload["status"] == "success"
 
 
@@ -688,11 +698,13 @@ def test_casa_validates_correctly_in_third_mission() -> None:
     complete_current_mission(client)
     scan(client, "SIGUIENTE")
 
-    scan(client, "CA")
-    payload = scan(client, "SA")
+    scan(client, "C")
+    scan(client, "A")
+    scan(client, "S")
+    payload = scan(client, "A")
 
     assert payload["mission_id"] == "m003"
-    assert payload["current_blocks"] == ["CA", "SA"]
+    assert payload["current_blocks"] == ["C", "A", "S", "A"]
     assert payload["current_text"] == "CASA"
     assert payload["status"] == "success"
 
@@ -706,11 +718,13 @@ def test_mesa_validates_correctly_in_fourth_mission() -> None:
     complete_current_mission(client)
     scan(client, "SIGUIENTE")
 
-    scan(client, "ME")
-    payload = scan(client, "SA")
+    scan(client, "M")
+    scan(client, "E")
+    scan(client, "S")
+    payload = scan(client, "A")
 
     assert payload["mission_id"] == "m004"
-    assert payload["current_blocks"] == ["ME", "SA"]
+    assert payload["current_blocks"] == ["M", "E", "S", "A"]
     assert payload["current_text"] == "MESA"
     assert payload["status"] == "success"
 

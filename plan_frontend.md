@@ -97,6 +97,10 @@ El input normal agrega bloques. `BORRAR`, `DELETE` y `BACKSPACE` eliminan el
 ultimo bloque. `RESET` limpia el estado de la mision actual. `ENTER` valida o
 confirma la accion actual.
 
+Decision vigente del MVP: los bloques principales son letras individuales. La
+arquitectura permite silabas o palabras completas mas adelante, pero el primer
+frontend Phaser debe asumir letras para `target_blocks` y `current_blocks`.
+
 `available_blocks` debe seguir siendo guia visual. No conviene volver a filtrar
 duro los inputs del backend porque el hardware real puede enviar cubos distintos
 durante pruebas.
@@ -125,14 +129,17 @@ Estructura sugerida:
 
 ```json
 {
-  "lumens": 0,
-  "fragments": 0,
+  "lumens": 99,
+  "fragments": 99,
   "completed_missions": [],
   "purchased_items": [],
   "unlocked_zones": ["forest"],
   "restored_items": []
 }
 ```
+
+Durante el MVP se parte con 99 Lumenes y 99 Fragmentos para probar tienda,
+decoraciones y aldea sin bloquear la demo por falta de recursos.
 
 ## 6. Eventos visuales de mision
 
@@ -155,7 +162,7 @@ Ejemplo de payload:
   "status": "success",
   "feedback": "Encontraste la palabra.",
   "events": [
-    { "type": "block_scanned", "value": "MA" },
+    { "type": "block_scanned", "value": "A" },
     { "type": "mission_completed", "mission_id": "forest_lantern" },
     { "type": "reward_granted", "lumens": 8, "fragments": 0 },
     { "type": "scene_restored", "item": "small_lantern" }
@@ -437,7 +444,7 @@ Criterio de aceptacion:
 
 Criterio de aceptacion:
 
-- Al escanear `MA`, aparece un cubo fisico `MA`.
+- Al escanear `M`, aparece un cubo fisico `M`.
 - Al completar la palabra, hay luz, color y baja la niebla.
 - La mision se siente como "ayudar a Lumo", no como un formulario.
 

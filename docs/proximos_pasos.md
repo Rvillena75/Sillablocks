@@ -4,7 +4,9 @@ Actualizado: 2026-05-14.
 
 ## Objetivo de la siguiente etapa
 
-Consolidar el MVP actual antes de migrar a Phaser:
+Consolidar el MVP actual antes de migrar a Phaser. La decision vigente es que
+el MVP use cubos de letras individuales; silabas y otros tipos de bloque quedan
+para iteraciones posteriores:
 
 ```txt
 Mision -> recompensa -> progreso persistente -> aldea -> compra -> mundo cambia
@@ -46,7 +48,7 @@ flujo NFC.
 
 ### Criterio de aceptacion
 
-- Al completar `MAMA`, la respuesta JSON trae eventos y la pantalla anima la
+- Al completar `MAMA` con `M`, `A`, `M`, `A`, la respuesta JSON trae eventos y la pantalla anima la
   restauracion.
 - Si llega una compra o restauracion por WebSocket, la UI no se desordena.
 - Los tests backend siguen pasando.
@@ -75,7 +77,9 @@ flujo NFC.
 
 ## Paso 4: Separar contrato de eventos para Phaser
 
-### Implementar
+Estado: implementado en `docs/contrato_eventos.md`.
+
+### Implementado
 
 - Crear documento breve `docs/contrato_eventos.md`.
 - Definir estructura estable:
@@ -99,7 +103,10 @@ flujo NFC.
 
 ## Paso 5: Crear scaffold Phaser 4 + TypeScript + Vite
 
-### Implementar
+Estado: app híbrida creada en `frontend/`. React/HTML/CSS maneja UI compleja y
+Phaser 4 queda limitado a la escena jugable.
+
+### Implementado
 
 - Crear `frontend/`.
 - Instalar Phaser 4, TypeScript y Vite.
@@ -123,7 +130,13 @@ flujo NFC.
 - La escena muestra al menos bloques actuales, recursos y eventos recientes.
 - El backend FastAPI sigue funcionando en `localhost:5000`.
 
+Nota: el HTML actual servido por FastAPI en `/` y `/aldea` se mantiene como
+fallback de demo hasta que Phaser alcance paridad funcional.
+
 ## Paso 6: Migrar MissionScene al Bosque de las Silabas
+
+Estado: en evaluacion. Existe un primer prototipo PixiJS en `frontend-pixi/`
+para comparar contra Phaser antes de cerrar motor visual.
 
 ### Implementar
 
@@ -137,7 +150,7 @@ flujo NFC.
 
 ### Criterio de aceptacion
 
-- Al escanear `MA`, aparece un cubo fisico.
+- Al escanear `M`, aparece un cubo fisico.
 - Al completar la mision, se enciende el farol y baja la niebla.
 - La escena se siente como "Ayuda a Lumo a encender el farol perdido", no como
   formulario de texto.

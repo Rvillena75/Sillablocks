@@ -5,7 +5,7 @@
 El stack recomendado para SilaBlocks es:
 
 ```txt
-Frontend de juego: Phaser 4 + TypeScript + Vite
+Frontend de juego: React + Phaser 4 + TypeScript + Vite
 Backend: FastAPI + WebSocket
 Persistencia MVP: JSON local
 Persistencia futura: SQLite
@@ -18,6 +18,11 @@ Audio: Audacity + sonidos con licencia revisada
 Esta decision prioriza un MVP local, estable y demostrable: el nino escanea
 cubos fisicos, la pantalla reacciona en tiempo real, la mision entrega
 recompensas y la aldea cambia de forma persistente.
+
+Nota de evaluacion: tambien se esta probando `PixiJS + TypeScript + Vite` en
+`frontend-pixi/` como alternativa visual. La decision final del motor debe
+tomarse por calidad visual, velocidad de iteracion y facilidad de mantener el
+contrato FastAPI.
 
 ## 2. Principios de arquitectura
 
@@ -118,7 +123,7 @@ GET /nfc?letra=<valor>
 Ejemplos:
 
 ```txt
-/nfc?letra=MA
+/nfc?letra=M
 /nfc?letra=CASA
 /nfc?letra=BORRAR
 /nfc?letra=RESET
@@ -128,6 +133,9 @@ Ejemplos:
 Reglas:
 
 - un valor normal se agrega al buffer como bloque;
+- en el MVP actual, cada cubo de aprendizaje representa una letra individual;
+- silabas y palabras completas siguen siendo compatibles a nivel tecnico, pero
+  no son el contrato pedagogico principal del MVP;
 - `BORRAR`, `DELETE` y `BACKSPACE` eliminan el ultimo bloque;
 - `RESET` limpia la mision actual;
 - `ENTER` valida o confirma la accion actual;
@@ -156,23 +164,23 @@ Reglas:
 
 ```json
 {
-  "current_blocks": ["MA"],
+  "current_blocks": ["M", "A"],
   "current_text": "MA",
-  "last_input": "MA",
+  "last_input": "A",
   "mission_id": "forest_lantern",
   "zone_id": "forest",
   "prompt": "Ayuda a Lumo a encender el farol perdido.",
   "target_text": "MAMA",
-  "target_blocks": ["MA", "MA"],
-  "available_blocks": ["MA", "PA", "SA"],
+  "target_blocks": ["M", "A", "M", "A"],
+  "available_blocks": ["M", "A", "P", "S"],
   "status": "in_progress",
   "feedback": "Falta una parte.",
   "progress_percent": 50,
   "lumens": 8,
   "fragments": 0,
   "events": [
-    { "type": "block_scanned", "value": "MA" },
-    { "type": "partial_progress", "expected_next": "MA" }
+    { "type": "block_scanned", "value": "A" },
+    { "type": "partial_progress", "expected_next": "M" }
   ]
 }
 ```
@@ -216,14 +224,17 @@ Contenido recomendado:
 
 ```json
 {
-  "lumens": 0,
-  "fragments": 0,
+  "lumens": 99,
+  "fragments": 99,
   "completed_missions": [],
   "purchased_items": [],
   "unlocked_zones": ["forest"],
   "restored_items": []
 }
 ```
+
+Durante el MVP se parte con 99 Lumenes y 99 Fragmentos para probar tienda,
+decoraciones y aldea sin tener que completar todas las misiones antes.
 
 Reglas:
 
@@ -411,7 +422,7 @@ Checks:
 
 ```powershell
 Invoke-RestMethod http://localhost:5000/health
-Invoke-RestMethod "http://localhost:5000/nfc?letra=MA"
+Invoke-RestMethod "http://localhost:5000/nfc?letra=M"
 Invoke-RestMethod http://localhost:5000/buffer
 ```
 
@@ -429,6 +440,31 @@ Dev servers:
 ```txt
 FastAPI: http://localhost:5000
 Vite:    http://localhost:5173
+```
+
+El scaffold `frontend/` usa proxy de Vite hacia FastAPI para mantener el mismo
+contrato de endpoints durante desarrollo.
+
+Division vigente:
+
+- React/HTML/CSS: header, panel de mision, bandeja de cubos, botones, aldea,
+  tienda, recursos y debug.
+- Phaser 4: bosque, Lumo, farol, camino, niebla, cubos escaneados, particulas y
+  microanimaciones.
+
+### Frontend PixiJS experimental
+
+```powershell
+cd frontend-pixi
+npm install
+npm run dev
+npm run build
+```
+
+Dev server:
+
+```txt
+PixiJS: http://localhost:5174
 ```
 
 Demo empaquetada:

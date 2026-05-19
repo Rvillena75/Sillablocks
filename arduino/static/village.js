@@ -50,7 +50,7 @@ const functionalVillageObjects = [
     guideLine: "Ese farol está apagado... ¿lo restauramos?",
     guideLook: "right",
     guidePosition: { lumoLeft: "25%", lumoTop: "255px", lineLeft: "31%", lineTop: "232px" },
-    objective: "Forma la palabra MAMÁ",
+    objective: "Forma la palabra MAMA",
     rewardLabel: "+10 Lúmenes",
     restorationKeys: ["Farol del Bosque"]
   },
@@ -65,7 +65,7 @@ const functionalVillageObjects = [
     guideLine: "Creo que este camino necesita ayuda.",
     guideLook: "right",
     guidePosition: { lumoLeft: "22%", lumoTop: "394px", lineLeft: "29%", lineTop: "368px" },
-    objective: "Forma la palabra PAPÁ",
+    objective: "Forma la palabra PAPA",
     rewardLabel: "+10 Lúmenes",
     restorationKeys: ["Camino de Madera"]
   },

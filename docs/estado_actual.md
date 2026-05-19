@@ -5,12 +5,17 @@ Actualizado: 2026-05-14.
 ## Resumen
 
 SilaBlocks ya funciona como MVP local de lectura inicial con input fisico,
-misiones, recompensas, progreso persistente y tienda. El sistema esta preparado
-para una demo universitaria sin nube ni cuentas de usuario.
+misiones, recompensas, progreso persistente y tienda. El MVP actual usa cubos de
+letras individuales para construir palabras. El sistema esta preparado para una
+demo universitaria sin nube ni cuentas de usuario.
 
 El backend FastAPI sigue siendo la fuente de verdad. El frontend actual es HTML,
-CSS y JavaScript servido por el mismo backend. La migracion futura definida es a
-Phaser 4 + TypeScript + Vite.
+CSS y JavaScript servido por el mismo backend. La migracion visual definida es a
+Phaser 4 + TypeScript + Vite. La app `frontend/` ahora usa React/HTML/CSS para
+la interfaz compleja y Phaser 4 solo para la escena jugable.
+Tambien existe un experimento PixiJS en `frontend-pixi/` para comparar una
+direccion visual mas ilustrada. Las pantallas HTML actuales se mantienen como
+fallback de demo.
 
 ## Arquitectura actual
 
@@ -83,14 +88,14 @@ Comandos soportados:
 
 | ID | Palabra | Bloques | Prompt | Restauracion | Recompensa |
 | --- | --- | --- | --- | --- | --- |
-| `m001` | MAMA/MAMA acentuado | `MA`, `MA acentuado` | Ayuda a Lumo a encender el farol perdido. | Farol del Bosque | 10 Lumenes |
-| `m002` | PAPA/PAPA acentuado | `PA`, `PA acentuado` | Ayuda a Lumo a abrir el camino de madera. | Camino de Madera | 10 Lumenes |
-| `m003` | CASA | `CA`, `SA` | Ayuda a Lumo a devolver una senal al pueblo. | Senal del Pueblo | 12 Lumenes + 1 Fragmento por hito |
-| `m004` | MESA | `ME`, `SA` | Ayuda a Lumo a restaurar la mesa de la plaza. | Mesa de la Plaza | 12 Lumenes |
+| `m001` | MAMA | `M`, `A`, `M`, `A` | Ayuda a Lumo a encender el farol perdido. | Farol del Bosque | 10 Lumenes |
+| `m002` | PAPA | `P`, `A`, `P`, `A` | Ayuda a Lumo a abrir el camino de madera. | Camino de Madera | 10 Lumenes |
+| `m003` | CASA | `C`, `A`, `S`, `A` | Ayuda a Lumo a devolver una senal al pueblo. | Senal del Pueblo | 12 Lumenes + 1 Fragmento por hito |
+| `m004` | MESA | `M`, `E`, `S`, `A` | Ayuda a Lumo a restaurar la mesa de la plaza. | Mesa de la Plaza | 12 Lumenes |
 | `m005` | BOTA | `B`, `O`, `T`, `A` | Ayuda a Lumo a completar la primera ruta. | Ruta del Explorador | 14 Lumenes + 1 Fragmento por hito |
 
-Nota: en codigo existen formas acentuadas para `MAMÁ` y `PAPÁ`. En esta tabla se
-evita depender de render especial para que sea facil leerla en consola.
+Nota: el prototipo se mantiene sin tildes en el contrato tecnico para que el
+flujo RFID/NFC y las pruebas por consola sean simples y estables.
 
 ## Eventos visuales
 
@@ -130,14 +135,17 @@ Estado inicial:
 
 ```json
 {
-  "lumens": 0,
-  "fragments": 0,
+  "lumens": 99,
+  "fragments": 99,
   "completed_missions": [],
   "purchased_items": [],
   "unlocked_zones": ["forest"],
   "restored_items": []
 }
 ```
+
+Nota: se parte con 99 Lumenes y 99 Fragmentos a proposito durante el MVP para
+probar compras, decoraciones y aldea sin bloquear la demo por falta de recursos.
 
 ## Tienda de la aldea
 
@@ -202,6 +210,9 @@ Archivos:
 - `arduino/static/app.js`
 - `arduino/static/village.js`
 - `arduino/static/styles.css`
+- `frontend/`: app React + Phaser 4 para la migracion visual.
+- `frontend-pixi/`: prototipo PixiJS para evaluar una direccion visual mas
+  llamativa para ninos.
 
 Pantalla de mision:
 

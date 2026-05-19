@@ -6,3 +6,9 @@ pytest-cache-files-*/
 sila_server.log
 *.log
 arduino/game_state.json
+frontend/dist/
+frontend/node_modules/
+frontend/*.log
+frontend-pixi/dist/
+frontend-pixi/node_modules/
+frontend-pixi/*.log
