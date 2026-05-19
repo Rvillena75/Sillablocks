@@ -5,7 +5,14 @@ const ids = {
   shopList: document.getElementById("shopList"),
   shopSummary: document.getElementById("shopSummary"),
   shopMessage: document.getElementById("shopMessage"),
+  resourceLumens: document.getElementById("resourceLumens"),
+  resourceFragments: document.getElementById("resourceFragments"),
   refreshShop: document.getElementById("refreshShop"),
+  editVillageMode: document.getElementById("editVillageMode"),
+  decorationInventoryTray: document.getElementById("decorationInventoryTray"),
+  villageScene: document.querySelector(".village-scene"),
+  placedDecorationsLayer: document.getElementById("placedDecorationsLayer"),
+  decorationPreview: document.getElementById("decorationPreview"),
   houseOne: document.getElementById("houseOne"),
   houseTwo: document.getElementById("houseTwo"),
   tower: document.getElementById("tower"),
@@ -30,6 +37,7 @@ const TOTAL_MISSIONS = 5;
 const villageTabs = Array.from(document.querySelectorAll("[data-tab-target]"));
 const villageTabPanels = Array.from(document.querySelectorAll(".village-tab-panel"));
 const itemNames = new Map();
+const shopItemsById = new Map();
 const functionalVillageObjects = [
   {
     id: "lantern_01",
@@ -41,6 +49,7 @@ const functionalVillageObjects = [
     lockedDescription: "El farol espera al inicio de la aventura.",
     guideLine: "Ese farol está apagado... ¿lo restauramos?",
     guideLook: "right",
+    guidePosition: { lumoLeft: "25%", lumoTop: "255px", lineLeft: "31%", lineTop: "232px" },
     objective: "Forma la palabra MAMÁ",
     rewardLabel: "+10 Lúmenes",
     restorationKeys: ["Farol del Bosque"]
@@ -55,6 +64,7 @@ const functionalVillageObjects = [
     lockedDescription: "Primero enciende el farol para ver por dónde avanzar.",
     guideLine: "Creo que este camino necesita ayuda.",
     guideLook: "right",
+    guidePosition: { lumoLeft: "22%", lumoTop: "394px", lineLeft: "29%", lineTop: "368px" },
     objective: "Forma la palabra PAPÁ",
     rewardLabel: "+10 Lúmenes",
     restorationKeys: ["Camino de Madera"]
@@ -69,6 +79,7 @@ const functionalVillageObjects = [
     lockedDescription: "El camino debe despertar antes de llegar a esta señal.",
     guideLine: "Creo que esta señal necesita ayuda.",
     guideLook: "right",
+    guidePosition: { lumoLeft: "42%", lumoTop: "238px", lineLeft: "49%", lineTop: "215px" },
     objective: "Forma la palabra CASA",
     rewardLabel: "+12 Lúmenes",
     restorationKeys: ["Señal del Pueblo"]
@@ -83,6 +94,7 @@ const functionalVillageObjects = [
     lockedDescription: "La señal del pueblo debe quedar lista antes de abrir esta casa.",
     guideLine: "Creo que esta casa necesita ayuda.",
     guideLook: "left",
+    guidePosition: { lumoLeft: "29%", lumoTop: "350px", lineLeft: "8%", lineTop: "328px" },
     objective: "Forma la palabra MESA",
     rewardLabel: "+12 Lúmenes",
     restorationKeys: ["Mesa de la Plaza"]
@@ -97,6 +109,7 @@ const functionalVillageObjects = [
     lockedDescription: "La plaza debe volver a brillar antes de cruzar este puente.",
     guideLine: "Ese puente está roto... ¿lo restauramos?",
     guideLook: "right",
+    guidePosition: { lumoLeft: "34%", lumoTop: "396px", lineLeft: "41%", lineTop: "372px" },
     objective: "Forma la palabra BOTA",
     rewardLabel: "+14 Lúmenes",
     restorationKeys: ["Ruta del Explorador"]
@@ -111,6 +124,7 @@ const functionalVillageObjects = [
     lockedDescription: "Este rincón se abrirá después de restaurar la primera ruta.",
     guideLine: "Este árbol guarda una sorpresa para después.",
     guideLook: "left",
+    guidePosition: { lumoLeft: "17%", lumoTop: "220px", lineLeft: "23%", lineTop: "196px" },
     objective: "Próxima aventura",
     rewardLabel: "Nueva luz",
     restorationKeys: ["glowing_tree"]
@@ -125,6 +139,7 @@ const functionalVillageObjects = [
     lockedDescription: "La niebla se levantará en una etapa futura.",
     guideLine: "Esa torre espera otra aventura.",
     guideLook: "right",
+    guidePosition: { lumoLeft: "47%", lumoTop: "260px", lineLeft: "54%", lineTop: "236px" },
     objective: "Próxima aventura",
     rewardLabel: "Nuevo camino",
     restorationKeys: ["bridge_path"]
@@ -135,6 +150,10 @@ let currentProgressSnapshot = null;
 let currentGameSnapshot = null;
 let selectedObjectId = null;
 let knownRestoredObjectIds = null;
+let placementMode = null;
+let editMode = false;
+let activeDragPointerId = null;
+let suppressDecorationClick = false;
 
 const lumoRestorationLines = {
   m001: "El farol volvió a brillar.",
@@ -171,15 +190,16 @@ function itemDisplayName(value) {
 }
 
 function shopItemIcon(item) {
+  const itemId = typeof item === "string" ? item : item.item_id;
   const icons = {
     small_lantern: "✦",
-    glowing_tree: "♣",
-    restored_sign: "➜",
-    decorated_house: "⌂",
-    path_to_village: "◇",
-    restored_bridge: "⌒"
+    glowing_tree: "✿",
+    restored_sign: "▸",
+    decorated_house: "▰",
+    path_to_village: "╋",
+    restored_bridge: "◌"
   };
-  return icons[item.item_id] || (item.category === "unlock" ? "◆" : "✦");
+  return icons[itemId] || "✦";
 }
 
 function buildAchievements(progress) {
@@ -221,7 +241,7 @@ function buildAchievements(progress) {
     },
     {
       title: "Manos Constructoras",
-      description: "Agrega tu primera mejora a la aldea.",
+      description: "Agrega tu primera decoración a la aldea.",
       icon: "🛠",
       unlocked: purchased.length >= 1,
       detail: purchased.length ? itemDisplayName(purchased[0]) : "Sin compras todavía"
@@ -319,6 +339,14 @@ function nextMissionId(progress = {}, gameState = {}) {
   return nextObject ? nextObject.missionId : null;
 }
 
+function nextMissionObject(progress = {}, gameState = {}) {
+  const missionId = nextMissionId(progress, gameState);
+  if (!missionId) {
+    return null;
+  }
+  return functionalVillageObjects.find((object) => object.missionId === missionId) || null;
+}
+
 function objectState(object, progress = {}, gameState = {}) {
   if (!object.missionId) {
     return "locked";
@@ -388,22 +416,45 @@ function triggerVillageCelebration(object, message) {
   ids.villageLumoLine.textContent = message || "¡Buen trabajo! Mira cómo cambió la aldea.";
 }
 
-function lumoLineForObject(object, state) {
-  if (state === "restored") {
+function lumoLineForObject(object, state, guidingObject) {
+  if (!guidingObject) {
     return "¡Buen trabajo! Mira cómo cambió la aldea.";
   }
-  if (state === "locked") {
-    return "Todavía falta restaurar otro lugar antes.";
+
+  if (!object || object.id === guidingObject.id) {
+    return guidingObject.guideLine || "Creo que este lugar necesita ayuda.";
   }
-  return object.guideLine || "Creo que este lugar necesita ayuda.";
+
+  if (state === "restored") {
+    return "Ese lugar ya cambió. Sigamos por acá.";
+  }
+
+  return `Faltan partes para restaurar ese lugar. Partamos por ${guidingObject.name}.`;
 }
 
-function updateLumoGuide(object, state) {
-  ids.villageLumo.dataset.look = object?.guideLook || "right";
-  ids.villageLumo.dataset.objectState = state || "idle";
-  ids.villageLumoLine.textContent = object
-    ? lumoLineForObject(object, state)
-    : "Creo que este lugar necesita ayuda.";
+function placeLumoNearObject(object) {
+  const defaultPosition = {
+    lumoLeft: "18px",
+    lumoTop: "20px",
+    lineLeft: "88px",
+    lineTop: "24px"
+  };
+  const position = object?.guidePosition
+    ? object.guidePosition
+    : defaultPosition;
+
+  ids.villageLumo.style.setProperty("--village-lumo-left", position.lumoLeft);
+  ids.villageLumo.style.setProperty("--village-lumo-top", position.lumoTop);
+  ids.villageLumoLine.style.setProperty("--village-lumo-line-left", position.lineLeft);
+  ids.villageLumoLine.style.setProperty("--village-lumo-line-top", position.lineTop);
+}
+
+function updateLumoGuide(object, state, progress = {}, gameState = {}) {
+  const guidingObject = nextMissionObject(progress, gameState);
+  placeLumoNearObject(guidingObject);
+  ids.villageLumo.dataset.look = guidingObject?.guideLook || "right";
+  ids.villageLumo.dataset.objectState = guidingObject ? "damaged" : "complete";
+  ids.villageLumoLine.textContent = lumoLineForObject(object, state, guidingObject);
 
   ids.villageLumo.classList.remove("react", "celebrate");
   void ids.villageLumo.offsetWidth;
@@ -418,7 +469,7 @@ function renderMissionCard(object, progress = {}, gameState = {}) {
   const state = objectState(object, progress, gameState);
   selectedObjectId = object.id;
   syncSelectedObjectClass();
-  updateLumoGuide(object, state);
+  updateLumoGuide(object, state, progress, gameState);
   ids.missionCard.hidden = false;
   ids.missionCard.dataset.objectState = state;
   ids.missionCardState.textContent = objectStateLabel(state);
@@ -479,53 +530,395 @@ function applyVillageScene(progress = {}, gameState = {}) {
   renderFunctionalObjects(progress, gameState);
 }
 
+function renderResources(progress = {}) {
+  ids.resourceLumens.textContent = String(progress.lumens ?? 0);
+  ids.resourceFragments.textContent = String(progress.fragments ?? progress.map_fragments ?? 0);
+}
+
+function placedDecorationForItem(progress = {}, itemId) {
+  return (progress.placed_decorations || []).find((decoration) => decoration.item_id === itemId) || null;
+}
+
+function decorationLabel(itemId) {
+  return itemNames.get(itemId) || shopItemsById.get(itemId)?.name || "Decoración";
+}
+
+function itemInventoryLabel(item) {
+  const owned = item.owned_count ?? (item.purchased ? 1 : 0);
+  const placed = item.placed_count ?? (item.placed ? 1 : 0);
+  if (!owned) {
+    return "Sin comprar";
+  }
+  return `${placed}/${owned} colocadas`;
+}
+
+function inventoryCounts(progress = {}, itemId) {
+  const owned = (progress.purchased_items || []).filter((value) => value === itemId).length;
+  const placed = (progress.placed_decorations || []).filter(
+    (decoration) => decoration.item_id === itemId
+  ).length;
+  return {
+    owned,
+    placed,
+    available: Math.max(owned - placed, 0)
+  };
+}
+
+function renderDecorationInventory(progress = {}) {
+  ids.decorationInventoryTray.replaceChildren();
+  ids.decorationInventoryTray.hidden = !editMode;
+  if (!editMode) {
+    return;
+  }
+
+  const ownedItemIds = Array.from(new Set(progress.purchased_items || []));
+  const availableItems = ownedItemIds
+    .map((itemId) => ({ itemId, ...inventoryCounts(progress, itemId) }))
+    .filter((item) => item.available > 0);
+
+  if (!availableItems.length) {
+    const empty = document.createElement("p");
+    empty.className = "decoration-inventory-empty";
+    empty.textContent = "No hay decoraciones guardadas para colocar.";
+    ids.decorationInventoryTray.appendChild(empty);
+    return;
+  }
+
+  availableItems.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "decoration-inventory-item";
+    button.dataset.itemId = item.itemId;
+
+    const art = document.createElement("span");
+    art.className = "decoration-inventory-art";
+    art.setAttribute("aria-hidden", "true");
+    art.textContent = shopItemIcon(item.itemId);
+
+    const copy = document.createElement("span");
+    copy.className = "decoration-inventory-copy";
+    copy.textContent = decorationLabel(item.itemId);
+
+    const count = document.createElement("strong");
+    count.textContent = `x${item.available}`;
+
+    button.append(art, copy, count);
+    button.addEventListener("click", () => startPlacement(item.itemId, { fromInventory: true }));
+    ids.decorationInventoryTray.appendChild(button);
+  });
+}
+
+function setEditMode(enabled) {
+  editMode = enabled;
+  ids.villageScene.classList.toggle("is-editing", editMode);
+  ids.editVillageMode.classList.toggle("is-active", editMode);
+  ids.editVillageMode.textContent = editMode ? "Salir de edición" : "Modo edición";
+  ids.editVillageMode.setAttribute("aria-pressed", editMode ? "true" : "false");
+  if (!editMode) {
+    stopPlacement();
+    setMessage("Modo edición cerrado.", "info");
+  } else {
+    setMessage("Modo edición: coloca, mueve o guarda tus decoraciones.", "info");
+  }
+  renderPlacedDecorations(currentProgressSnapshot || {});
+  renderDecorationInventory(currentProgressSnapshot || {});
+}
+
+function renderPlacedDecorations(progress = {}) {
+  ids.placedDecorationsLayer.replaceChildren();
+  (progress.placed_decorations || []).forEach((decoration) => {
+    const position = decoration.position || {};
+    const itemId = decoration.item_id;
+
+    const marker = document.createElement("div");
+    marker.className = "village-decoration";
+    marker.dataset.itemId = itemId;
+    marker.dataset.decorationId = decoration.id;
+    marker.style.left = `${position.x ?? 50}%`;
+    marker.style.top = `${position.y ?? 70}%`;
+    marker.setAttribute("role", "button");
+    marker.setAttribute("tabindex", "0");
+    marker.setAttribute("aria-label", `${decorationLabel(itemId)} colocada`);
+
+    const art = document.createElement("span");
+    art.className = "decoration-art";
+    art.textContent = shopItemIcon(itemId);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "decoration-remove";
+    remove.textContent = "x";
+    remove.setAttribute("aria-label", `Guardar ${decorationLabel(itemId)} en inventario`);
+    remove.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!editMode) {
+        return;
+      }
+      removePlacedDecoration(decoration.id);
+    });
+
+    marker.addEventListener("pointerdown", (event) => {
+      if (!editMode || event.target.closest(".decoration-remove")) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      activeDragPointerId = event.pointerId;
+      suppressDecorationClick = true;
+      marker.classList.add("is-dragging");
+      marker.setPointerCapture(event.pointerId);
+      startPlacement(itemId, { decorationId: decoration.id, drag: true });
+      const position = scenePositionFromEvent(event);
+      updateDecorationPreview(position, isPlacementValid(position));
+      setMessage(`Arrastra ${decorationLabel(itemId)} y suelta para guardar.`, "info");
+    });
+    marker.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (suppressDecorationClick) {
+        suppressDecorationClick = false;
+        return;
+      }
+      if (editMode) {
+        startPlacement(itemId, { decorationId: decoration.id });
+      }
+    });
+    marker.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (editMode) {
+          startPlacement(itemId, { decorationId: decoration.id });
+        }
+      }
+    });
+
+    marker.append(art, remove);
+    ids.placedDecorationsLayer.appendChild(marker);
+  });
+}
+
+function scenePositionFromEvent(event) {
+  const rect = ids.villageScene.getBoundingClientRect();
+  return {
+    x: Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)),
+    y: Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100)),
+    clientX: event.clientX,
+    clientY: event.clientY
+  };
+}
+
+function pointOverFunctionalObject(clientX, clientY) {
+  return functionalVillageObjects.some((object) => {
+    const element = ids[object.elementKey];
+    if (!element) {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    const margin = 18;
+    return clientX >= rect.left - margin
+      && clientX <= rect.right + margin
+      && clientY >= rect.top - margin
+      && clientY <= rect.bottom + margin;
+  });
+}
+
+function overlapsPlacedDecoration(position) {
+  return (currentProgressSnapshot?.placed_decorations || []).some((decoration) => {
+    if (decoration.id === placementMode?.decorationId) {
+      return false;
+    }
+    const other = decoration.position || {};
+    return Math.abs((other.x ?? 0) - position.x) < 8
+      && Math.abs((other.y ?? 0) - position.y) < 8;
+  });
+}
+
+function isPlacementValid(position) {
+  if (position.y < 42 || position.y > 94) {
+    return false;
+  }
+  if (pointOverFunctionalObject(position.clientX, position.clientY)) {
+    return false;
+  }
+  return !overlapsPlacedDecoration(position);
+}
+
+function updateDecorationPreview(position, valid) {
+  if (!placementMode) {
+    return;
+  }
+  ids.decorationPreview.hidden = false;
+  ids.decorationPreview.textContent = shopItemIcon(placementMode.itemId);
+  ids.decorationPreview.style.left = `${position.x}%`;
+  ids.decorationPreview.style.top = `${position.y}%`;
+  ids.decorationPreview.dataset.valid = valid ? "true" : "false";
+}
+
+function startPlacement(itemId, options = {}) {
+  if (options.fromInventory) {
+    setEditMode(true);
+  }
+  const existing = options.decorationId
+    ? (currentProgressSnapshot?.placed_decorations || []).find(
+      (decoration) => decoration.id === options.decorationId
+    )
+    : null;
+  const initial = existing?.position || { x: 50, y: 72 };
+
+  placementMode = {
+    itemId,
+    decorationId: options.decorationId || null
+  };
+  ids.villageScene.classList.add("is-placing");
+  updateDecorationPreview(
+    { x: initial.x, y: initial.y, clientX: -9999, clientY: -9999 },
+    true
+  );
+  setMessage(
+    options.decorationId
+      ? `Mueve ${decorationLabel(itemId)} y toca la aldea para reubicar.`
+      : `Toca la aldea para colocar ${decorationLabel(itemId)}.`,
+    "info"
+  );
+}
+
+function stopPlacement() {
+  placementMode = null;
+  activeDragPointerId = null;
+  suppressDecorationClick = false;
+  ids.villageScene.classList.remove("is-placing");
+  ids.decorationPreview.hidden = true;
+  ids.decorationPreview.textContent = "";
+  ids.decorationPreview.removeAttribute("data-valid");
+  document.querySelectorAll(".village-decoration.is-dragging").forEach((element) => {
+    element.classList.remove("is-dragging");
+  });
+}
+
+async function savePlacement(position) {
+  if (!placementMode) {
+    return;
+  }
+
+  const isMove = Boolean(placementMode.decorationId);
+  const endpoint = isMove
+    ? `/decorations/${encodeURIComponent(placementMode.decorationId)}`
+    : "/decorations/place";
+  const method = isMove ? "PATCH" : "POST";
+  const body = isMove
+    ? { x: position.x, y: position.y }
+    : { item_id: placementMode.itemId, x: position.x, y: position.y };
+
+  try {
+    const response = await fetch(endpoint, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      setMessage(payload.message || "No se pudo colocar esa decoración.", "warn");
+      await loadVillage({ silent: true });
+      return;
+    }
+
+    stopPlacement();
+    setMessage(payload.message || "Decoración colocada.", "ok");
+    handleVillageEvents(payload.events);
+    await loadVillage({ silent: true });
+    if (editMode) {
+      renderDecorationInventory(currentProgressSnapshot || {});
+    }
+  } catch (error) {
+    setMessage("No se pudo guardar la decoración. Revisa el servidor.", "error");
+  }
+}
+
+async function removePlacedDecoration(decorationId) {
+  try {
+    const response = await fetch(`/decorations/${encodeURIComponent(decorationId)}`, {
+      method: "DELETE"
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      setMessage(payload.message || "No se pudo guardar esa decoración.", "warn");
+      return;
+    }
+    stopPlacement();
+    setMessage(payload.message || "Decoración guardada en inventario.", "ok");
+    await loadVillage({ silent: true });
+    if (editMode) {
+      renderDecorationInventory(currentProgressSnapshot || {});
+    }
+  } catch (error) {
+    setMessage("No se pudo guardar esa decoración. Revisa el servidor.", "error");
+  }
+}
+
 function renderProgress(progress = {}, gameState = {}) {
+  renderResources(progress);
+  renderPlacedDecorations(progress);
+  renderDecorationInventory(progress);
   renderAchievements(progress);
   applyVillageScene(progress, gameState);
 }
 
-function createShopButton(item) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "control-button shop-buy";
-  button.dataset.itemId = item.item_id;
+function createShopControls(item) {
+  const controls = document.createElement("div");
+  controls.className = "shop-actions";
 
-  if (item.purchased) {
-    button.textContent = "Agregado";
-    button.disabled = true;
-  } else if (!item.affordable) {
-    button.textContent = "Reunir recursos";
-    button.disabled = true;
-  } else {
-    button.textContent = "Agregar";
-    button.addEventListener("click", () => buyItem(item.item_id));
+  const availableToPlace = item.available_to_place ?? (item.purchased && !item.placed ? 1 : 0);
+
+  if (availableToPlace > 0) {
+    const place = document.createElement("button");
+    place.type = "button";
+    place.className = "control-button shop-buy";
+    place.dataset.itemId = item.item_id;
+    place.textContent = "Colocar";
+    place.addEventListener("click", () => startPlacement(item.item_id));
+    controls.appendChild(place);
   }
 
-  return button;
+  const buy = document.createElement("button");
+  buy.type = "button";
+  buy.className = "control-button shop-buy";
+  buy.dataset.itemId = item.item_id;
+  if (!item.affordable) {
+    buy.textContent = "Reunir recursos";
+    buy.disabled = true;
+  } else {
+    buy.textContent = item.purchased ? "Comprar más" : "Comprar";
+    buy.addEventListener("click", () => buyItem(item.item_id));
+  }
+  controls.appendChild(buy);
+
+  return controls;
 }
 
 function renderShop(shop) {
   ids.shopList.replaceChildren();
+  shopItemsById.clear();
   const items = shop.items || [];
-  const availableCount = items.filter((item) => item.affordable && !item.purchased).length;
-  const purchasedCount = items.filter((item) => item.purchased).length;
-  ids.shopSummary.textContent = `${availableCount} disponibles · ${purchasedCount} en la aldea`;
+  const inventoryCount = items.reduce((total, item) => total + (item.owned_count || 0), 0);
+  const storedCount = items.reduce((total, item) => total + (item.available_to_place || 0), 0);
+  ids.shopSummary.textContent = `${storedCount} guardadas · ${inventoryCount} compradas`;
 
   if (!items.length) {
     const empty = document.createElement("p");
     empty.className = "shop-empty";
-    empty.textContent = "No hay mejoras disponibles por ahora.";
+    empty.textContent = "No hay decoraciones disponibles por ahora.";
     ids.shopList.appendChild(empty);
     return;
   }
 
   items.forEach((item) => {
     itemNames.set(item.item_id, item.name);
+    shopItemsById.set(item.item_id, item);
 
     const card = document.createElement("article");
     card.className = "shop-item";
     card.dataset.itemId = item.item_id;
     card.dataset.category = item.category;
+    card.dataset.worldKind = "decoration";
     card.dataset.purchased = item.purchased ? "true" : "false";
     card.dataset.affordable = item.affordable ? "true" : "false";
 
@@ -553,14 +946,14 @@ function renderShop(shop) {
     const status = document.createElement("span");
     status.className = "shop-status";
     status.textContent = item.purchased
-      ? "En la aldea"
+      ? itemInventoryLabel(item)
       : item.affordable
-        ? "Disponible"
+        ? "Decoración opcional"
         : "Bloqueado por recursos";
 
     copy.append(title, description, meta);
     meta.append(cost, status);
-    card.append(art, copy, createShopButton(item));
+    card.append(art, copy, createShopControls(item));
     ids.shopList.appendChild(card);
   });
 }
@@ -643,7 +1036,7 @@ function handleVillageEvents(events) {
 }
 
 async function buyItem(itemId) {
-  setMessage("Agregando mejora a la aldea.", "info");
+  setMessage("Agregando decoración al inventario.", "info");
   try {
     const response = await fetch("/buy", {
       method: "POST",
@@ -657,12 +1050,12 @@ async function buyItem(itemId) {
     }
 
     if (!response.ok || !payload.ok) {
-      setMessage(payload.message || "Aún faltan recursos para esa mejora.", "warn");
+      setMessage(payload.message || "Aún faltan recursos para esa decoración.", "warn");
       await loadVillage({ silent: true });
       return;
     }
 
-    setMessage(payload.message || "Mejora agregada a la aldea.", "ok");
+    setMessage(payload.message || "Decoración agregada al inventario. Usa Colocar cuando quieras ponerla.", "ok");
     handleVillageEvents(payload.events);
     await loadVillage({ silent: true });
   } catch (error) {
@@ -771,6 +1164,56 @@ ids.missionCardAction.addEventListener("click", () => {
 });
 
 ids.refreshShop.addEventListener("click", () => loadVillage());
+ids.editVillageMode.addEventListener("click", () => setEditMode(!editMode));
+ids.villageScene.addEventListener("pointermove", (event) => {
+  if (!placementMode) {
+    return;
+  }
+  if (activeDragPointerId !== null && event.pointerId !== activeDragPointerId) {
+    return;
+  }
+  const position = scenePositionFromEvent(event);
+  updateDecorationPreview(position, isPlacementValid(position));
+});
+ids.villageScene.addEventListener("pointerdown", (event) => {
+  if (!placementMode || activeDragPointerId !== null) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  const position = scenePositionFromEvent(event);
+  if (!isPlacementValid(position)) {
+    activeDragPointerId = null;
+    updateDecorationPreview(position, false);
+    document.querySelectorAll(".village-decoration.is-dragging").forEach((element) => {
+      element.classList.remove("is-dragging");
+    });
+    setMessage("Busca un espacio libre sin tapar edificios importantes.", "warn");
+    return;
+  }
+  savePlacement(position);
+}, true);
+ids.villageScene.addEventListener("pointerup", (event) => {
+  if (!placementMode || activeDragPointerId !== event.pointerId) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  const position = scenePositionFromEvent(event);
+  if (!isPlacementValid(position)) {
+    updateDecorationPreview(position, false);
+    setMessage("Busca un espacio libre sin tapar edificios importantes.", "warn");
+    return;
+  }
+  savePlacement(position);
+}, true);
+ids.villageScene.addEventListener("pointercancel", (event) => {
+  if (activeDragPointerId === event.pointerId) {
+    stopPlacement();
+  }
+}, true);
 bindFunctionalObjects();
 loadVillage();
 connectSocket();

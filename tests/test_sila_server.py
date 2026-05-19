@@ -62,12 +62,19 @@ def test_index_and_village_pages_render() -> None:
     assert village.status_code == 200
     assert "Aldea de Lumo" in village.text
     assert "Sala de trofeos" in village.text
-    assert "Tienda de la Aldea" in village.text
+    assert "Decoraciones" in village.text
+    assert "Objetos funcionales" in village.text
     assert "villageLumoLine" in village.text
     assert "villageMist" in village.text
     assert "villageMissionCard" in village.text
     assert "missionCardObjective" in village.text
     assert "shopList" in village.text
+    assert "resourceLumens" in village.text
+    assert "resourceFragments" in village.text
+    assert "placedDecorationsLayer" in village.text
+    assert "decorationPreview" in village.text
+    assert "editVillageMode" in village.text
+    assert "decorationInventoryTray" in village.text
     assert ">Juego<" not in village.text
     assert "missionCardBuffer" not in village.text
     assert "missionCardValidate" not in village.text
@@ -106,7 +113,7 @@ def test_ma_and_accented_ma_produce_success() -> None:
     assert payload["status"] == "success"
     assert payload["feedback"] == server.FEEDBACK_SUCCESS
     assert payload["progress_percent"] == 100
-    assert payload["lumens"] == 10
+    assert payload["lumens"] == 109
     assert payload["restored_items"] == ["Farol del Bosque"]
 
 
@@ -183,8 +190,8 @@ def test_buffer_exposes_game_state_fields() -> None:
     assert payload["zone"] == "Bosque de las Sílabas"
     assert payload["skill"] == "sílabas directas"
     assert payload["rewards"] == {
-        "lumens": 0,
-        "map_fragments": 0,
+        "lumens": 99,
+        "map_fragments": 99,
         "restored_items": [],
         "rewarded_mission_ids": [],
     }
@@ -198,31 +205,31 @@ def test_progress_endpoint_returns_initial_progress() -> None:
     assert response.status_code == 200
     assert response.json() == {
         "ok": True,
-        "lumens": 0,
-        "fragments": 0,
+        "lumens": 99,
+        "fragments": 99,
         "completed_missions": [],
         "purchased_items": [],
         "unlocked_zones": ["forest"],
         "restored_items": [],
-        "map_fragments": 0,
+        "placed_decorations": [],
+        "map_fragments": 99,
     }
 
 
 def test_startup_reset_clears_persisted_progress() -> None:
-    progress = GameProgress.default()
-    progress.add_rewards(lumens=99, fragments=2)
+    progress = GameProgress(lumens=12, fragments=2)
     progress.mark_mission_completed("m001")
     progress.mark_item_restored("Farol del Bosque")
     server.progress_store.save(progress)
     server.load_persisted_progress()
-    assert server.game_engine.lumens == 99
+    assert server.game_engine.lumens == 12
 
     reset_progress = server.reset_demo_state_on_startup()
 
     expected = GameProgress.default().to_dict()
     assert reset_progress.to_dict() == expected
     assert server.progress_store.load().to_dict() == expected
-    assert server.game_engine.lumens == 0
+    assert server.game_engine.lumens == 99
     assert server.game_engine.completed_mission_ids == set()
 
 
@@ -232,8 +239,8 @@ def test_completed_mission_is_saved_to_progress_store() -> None:
     complete_current_mission(client)
     payload = client.get("/progress").json()
 
-    assert payload["lumens"] == 10
-    assert payload["fragments"] == 0
+    assert payload["lumens"] == 109
+    assert payload["fragments"] == 99
     assert payload["completed_missions"] == ["m001"]
     assert payload["restored_items"] == ["Farol del Bosque"]
     assert server.progress_store.load().to_dict()["completed_missions"] == ["m001"]
@@ -274,7 +281,7 @@ def test_progress_does_not_duplicate_rewards_after_success() -> None:
 
     payload = client.get("/progress").json()
 
-    assert payload["lumens"] == 10
+    assert payload["lumens"] == 109
     assert payload["completed_missions"] == ["m001"]
 
 
@@ -289,11 +296,12 @@ def test_reset_todo_resets_persisted_progress() -> None:
     assert payload["recent_inputs"][0]["value"] == "RESET_TODO"
     assert payload["recent_inputs"][0]["action"] == "reset_all"
     assert payload["recent_inputs"][0]["accepted"] is True
-    assert payload["lumens"] == 0
-    assert progress["lumens"] == 0
-    assert progress["fragments"] == 0
+    assert payload["lumens"] == 99
+    assert progress["lumens"] == 99
+    assert progress["fragments"] == 99
     assert progress["completed_missions"] == []
     assert progress["restored_items"] == []
+    assert progress["placed_decorations"] == []
 
 
 def test_progress_tracks_fragment_rewards_after_milestone_missions() -> None:
@@ -305,9 +313,9 @@ def test_progress_tracks_fragment_rewards_after_milestone_missions() -> None:
 
     payload = client.get("/progress").json()
 
-    assert payload["lumens"] == 58
-    assert payload["fragments"] == 2
-    assert payload["map_fragments"] == 2
+    assert payload["lumens"] == 157
+    assert payload["fragments"] == 101
+    assert payload["map_fragments"] == 101
     assert payload["completed_missions"] == ["m001", "m002", "m003", "m004", "m005"]
 
 
@@ -338,7 +346,7 @@ def test_shop_endpoint_exposes_inventory_and_affordability() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["ok"] is True
-    assert payload["resources"] == {"lumens": 0, "fragments": 0}
+    assert payload["resources"] == {"lumens": 99, "fragments": 99}
     item_ids = [item["item_id"] for item in payload["items"]]
     assert item_ids == [
         "small_lantern",
@@ -348,16 +356,22 @@ def test_shop_endpoint_exposes_inventory_and_affordability() -> None:
         "path_to_village",
         "restored_bridge",
     ]
+    assert all(item["category"] == "decoration" for item in payload["items"])
+    assert all(item["restores_item"] is None for item in payload["items"])
+    assert all(item["unlocks_zone"] is None for item in payload["items"])
     small_lantern = payload["items"][0]
-    assert small_lantern["name"] == "Farol pequeno"
-    assert small_lantern["cost"] == {"lumens": 8, "fragments": 0}
+    assert small_lantern["name"] == "Farol de luciernagas"
+    assert small_lantern["cost"] == {"lumens": 6, "fragments": 0}
     assert small_lantern["purchased"] is False
-    assert small_lantern["affordable"] is False
+    assert small_lantern["affordable"] is True
+    assert small_lantern["placed"] is False
+    assert small_lantern["owned_count"] == 0
+    assert small_lantern["placed_count"] == 0
+    assert small_lantern["available_to_place"] == 0
 
 
 def test_buy_lumen_item_spends_persists_and_returns_events() -> None:
     client = make_client()
-    complete_current_mission(client)
 
     response = client.post("/buy", json={"item_id": "small_lantern"})
 
@@ -367,49 +381,49 @@ def test_buy_lumen_item_spends_persists_and_returns_events() -> None:
     assert payload["code"] == "purchased"
     assert payload["item"]["item_id"] == "small_lantern"
     assert payload["item"]["purchased"] is True
-    assert payload["progress"]["lumens"] == 2
-    assert payload["progress"]["fragments"] == 0
+    assert payload["progress"]["lumens"] == 93
+    assert payload["progress"]["fragments"] == 99
     assert payload["progress"]["purchased_items"] == ["small_lantern"]
-    assert "small_lantern" in payload["progress"]["restored_items"]
+    assert payload["progress"]["restored_items"] == []
+    assert payload["progress"]["placed_decorations"] == []
     assert payload["events"] == [
         {
             "type": "item_purchased",
             "item_id": "small_lantern",
-            "name": "Farol pequeno",
-            "spent": {"lumens": 8, "fragments": 0},
-        },
-        {
-            "type": "village_restored",
-            "item_id": "small_lantern",
-            "name": "Farol pequeno",
+            "name": "Farol de luciernagas",
+            "spent": {"lumens": 6, "fragments": 0},
         },
     ]
-    assert server.progress_store.load().lumens == 2
+    assert server.progress_store.load().lumens == 93
     assert server.progress_store.load().purchased_items == ["small_lantern"]
 
 
-def test_buy_fragment_item_unlocks_zone_and_persists() -> None:
+def test_buy_decoration_does_not_unlock_zone_or_restore_functional_object() -> None:
     client = make_client()
-    for _ in range(2):
-        complete_current_mission(client)
-        scan(client, "SIGUIENTE")
-    complete_current_mission(client)
 
     response = client.post("/buy", json={"item_id": "path_to_village"})
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["progress"]["fragments"] == 0
+    assert payload["progress"]["lumens"] == 91
+    assert payload["progress"]["fragments"] == 99
     assert payload["progress"]["purchased_items"] == ["path_to_village"]
-    assert payload["progress"]["unlocked_zones"] == ["forest", "village"]
-    assert payload["events"][-1] == {
-        "type": "zone_unlocked",
-        "zone_id": "village",
-    }
+    assert payload["progress"]["unlocked_zones"] == ["forest"]
+    assert payload["progress"]["restored_items"] == []
+    assert payload["progress"]["placed_decorations"] == []
+    assert payload["events"] == [
+        {
+            "type": "item_purchased",
+            "item_id": "path_to_village",
+            "name": "Cerca de madera",
+            "spent": {"lumens": 8, "fragments": 0},
+        }
+    ]
 
 
 def test_buy_rejects_insufficient_resources_without_spending() -> None:
     client = make_client()
+    server.progress_store.save(GameProgress(lumens=0, fragments=0))
 
     response = client.post("/buy", json={"item_id": "small_lantern"})
 
@@ -422,20 +436,112 @@ def test_buy_rejects_insufficient_resources_without_spending() -> None:
     assert payload["events"] == []
 
 
-def test_buy_rejects_duplicate_purchase_without_spending_again() -> None:
+def test_buy_allows_multiple_copies_of_same_decoration() -> None:
     client = make_client()
-    complete_current_mission(client)
     first = client.post("/buy", json={"item_id": "small_lantern"}).json()
 
     response = client.post("/buy", json={"item_id": "small_lantern"})
 
-    assert first["progress"]["lumens"] == 2
-    assert response.status_code == 409
+    assert first["progress"]["lumens"] == 93
+    assert response.status_code == 200
     payload = response.json()
-    assert payload["ok"] is False
-    assert payload["code"] == "already_purchased"
-    assert payload["progress"]["lumens"] == 2
-    assert payload["progress"]["purchased_items"] == ["small_lantern"]
+    assert payload["ok"] is True
+    assert payload["code"] == "purchased"
+    assert payload["progress"]["lumens"] == 87
+    assert payload["progress"]["purchased_items"] == ["small_lantern", "small_lantern"]
+    assert payload["item"]["owned_count"] == 2
+    assert payload["item"]["available_to_place"] == 2
+
+
+def test_place_move_and_remove_decoration_persists_without_restoring_world() -> None:
+    client = make_client()
+    client.post("/buy", json={"item_id": "small_lantern"})
+
+    placed_response = client.post(
+        "/decorations/place",
+        json={"item_id": "small_lantern", "x": 46, "y": 74},
+    )
+
+    assert placed_response.status_code == 200
+    placed = placed_response.json()
+    assert placed["ok"] is True
+    assert placed["decoration"] == {
+        "id": "decor_001",
+        "item_id": "small_lantern",
+        "position": {"x": 46, "y": 74},
+        "rotation": 0,
+        "scale": 1,
+    }
+    assert placed["progress"]["placed_decorations"] == [placed["decoration"]]
+    assert placed["progress"]["restored_items"] == []
+
+    shop_after_place = client.get("/shop").json()
+    small_lantern = shop_after_place["items"][0]
+    assert small_lantern["purchased"] is True
+    assert small_lantern["placed"] is True
+    assert small_lantern["owned_count"] == 1
+    assert small_lantern["placed_count"] == 1
+    assert small_lantern["available_to_place"] == 0
+
+    moved_response = client.patch(
+        "/decorations/decor_001",
+        json={"x": 62, "y": 81},
+    )
+
+    assert moved_response.status_code == 200
+    moved = moved_response.json()
+    assert moved["decoration"]["position"] == {"x": 62, "y": 81}
+    assert moved["progress"]["placed_decorations"][0]["position"] == {"x": 62, "y": 81}
+
+    removed_response = client.delete("/decorations/decor_001")
+
+    assert removed_response.status_code == 200
+    removed = removed_response.json()
+    assert removed["ok"] is True
+    assert removed["progress"]["purchased_items"] == ["small_lantern"]
+    assert removed["progress"]["placed_decorations"] == []
+
+
+def test_place_decoration_rejects_unowned_and_out_of_bounds_but_allows_extra_owned_copy() -> None:
+    client = make_client()
+
+    unowned = client.post(
+        "/decorations/place",
+        json={"item_id": "small_lantern", "x": 50, "y": 70},
+    )
+    assert unowned.status_code == 409
+    assert unowned.json()["ok"] is False
+
+    client.post("/buy", json={"item_id": "small_lantern"})
+    out_of_bounds = client.post(
+        "/decorations/place",
+        json={"item_id": "small_lantern", "x": 150, "y": 70},
+    )
+    assert out_of_bounds.status_code == 400
+
+    first_placed = client.post(
+        "/decorations/place",
+        json={"item_id": "small_lantern", "x": 50, "y": 70},
+    )
+    assert first_placed.status_code == 200
+
+    no_inventory_left = client.post(
+        "/decorations/place",
+        json={"item_id": "small_lantern", "x": 60, "y": 75},
+    )
+    assert no_inventory_left.status_code == 409
+    assert no_inventory_left.json()["progress"]["placed_decorations"][0]["position"] == {"x": 50, "y": 70}
+
+    client.post("/buy", json={"item_id": "small_lantern"})
+    second_placed = client.post(
+        "/decorations/place",
+        json={"item_id": "small_lantern", "x": 60, "y": 75},
+    )
+    assert second_placed.status_code == 200
+    assert [item["id"] for item in second_placed.json()["progress"]["placed_decorations"]] == [
+        "decor_001",
+        "decor_002",
+    ]
 
 
 def test_buy_rejects_unknown_item() -> None:
@@ -546,7 +652,7 @@ def test_reset_all_returns_to_first_mission() -> None:
     assert payload["completed_missions"] == 0
     assert payload["current_blocks"] == []
     assert payload["status"] == "idle"
-    assert payload["lumens"] == 0
+    assert payload["lumens"] == 99
     assert payload["restored_items"] == []
 
 
@@ -646,5 +752,5 @@ def test_next_after_last_success_marks_demo_complete() -> None:
     assert payload["is_demo_complete"] is True
     assert payload["is_last_mission"] is True
     assert payload["completed_missions"] == 5
-    assert payload["lumens"] == 58
-    assert payload["map_fragments"] == 2
+    assert payload["lumens"] == 157
+    assert payload["map_fragments"] == 101

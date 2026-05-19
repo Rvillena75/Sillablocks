@@ -1,10 +1,11 @@
 {
-  "lumens": 0,
-  "fragments": 0,
+  "lumens": 99,
+  "fragments": 99,
   "completed_missions": [],
   "purchased_items": [],
   "unlocked_zones": [
     "forest"
   ],
-  "restored_items": []
+  "restored_items": [],
+  "placed_decorations": []
 }

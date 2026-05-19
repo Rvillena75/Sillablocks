@@ -41,6 +41,7 @@ from arduino.game.missions import (  # noqa: E402
 )
 from arduino.game.progress import GameProgress, ProgressStore  # noqa: E402
 from arduino.game.shop import (  # noqa: E402
+    SHOP_ITEM_BY_ID,
     build_shop_payload,
     buy_shop_item,
 )
@@ -112,6 +113,17 @@ manager = ConnectionManager()
 
 class BuyRequest(BaseModel):
     item_id: str
+
+
+class DecorationPlaceRequest(BaseModel):
+    item_id: str
+    x: float
+    y: float
+
+
+class DecorationMoveRequest(BaseModel):
+    x: float
+    y: float
 
 
 class MissionSelectRequest(BaseModel):
@@ -186,6 +198,53 @@ def build_buy_payload(
     }
 
 
+def normalize_decoration_position(x: float, y: float) -> dict[str, int] | None:
+    if not 0 <= x <= 100 or not 0 <= y <= 100:
+        return None
+    return {"x": round(x), "y": round(y)}
+
+
+def next_decoration_id(progress: GameProgress) -> str:
+    highest = 0
+    for decoration in progress.placed_decorations:
+        decoration_id = str(decoration.get("id", ""))
+        if not decoration_id.startswith("decor_"):
+            continue
+        try:
+            highest = max(highest, int(decoration_id.removeprefix("decor_")))
+        except ValueError:
+            continue
+    return f"decor_{highest + 1:03d}"
+
+
+def build_decoration_payload(
+    progress: GameProgress,
+    decoration: dict[str, Any] | None,
+    message: str,
+    ok: bool = True,
+    events: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
+        "ok": ok,
+        "message": message,
+        "decoration": decoration,
+        "progress": build_progress_payload(progress),
+        "events": events or [],
+    }
+
+
+def owned_decoration_count(progress: GameProgress, item_id: str) -> int:
+    return progress.purchased_items.count(item_id)
+
+
+def placed_decoration_count(progress: GameProgress, item_id: str) -> int:
+    return sum(
+        1
+        for decoration in progress.placed_decorations
+        if decoration.get("item_id") == item_id
+    )
+
+
 def previous_missions_completed(mission_index: int, progress: GameProgress) -> bool:
     completed = set(progress.completed_missions)
     completed.update(game_engine.completed_mission_ids)
@@ -256,7 +315,8 @@ def persist_completed_missions() -> tuple[GameProgress, list[dict[str, Any]]]:
 
 def reset_runtime_state() -> None:
     game_engine.reset_runtime()
-    progress_store.reset()
+    progress = progress_store.reset()
+    apply_progress_to_engine(progress)
     sync_legacy_state()
 
 
@@ -335,7 +395,8 @@ def reset_game_state() -> None:
 
 def reset_all_game_state() -> None:
     game_engine.reset_all()
-    progress_store.reset()
+    progress = progress_store.reset()
+    apply_progress_to_engine(progress)
     sync_legacy_state()
 
 
@@ -411,7 +472,8 @@ async def handle_nfc_value(raw_value: str) -> JSONResponse:
     processed = game_engine.process_input(value)
     events: list[dict[str, Any]] = []
     if processed.action == "reset_all":
-        progress_store.reset()
+        progress = progress_store.reset()
+        apply_progress_to_engine(progress)
     else:
         _, events = persist_completed_missions()
     sync_legacy_state()
@@ -509,6 +571,157 @@ async def buy_item(request: BuyRequest) -> JSONResponse:
             ok=True,
             item=result.item.as_dict(saved_progress) if result.item is not None else None,
             events=result.events,
+        )
+    )
+
+
+@app.post("/decorations/place")
+async def place_decoration(request: DecorationPlaceRequest) -> JSONResponse:
+    progress = progress_store.load()
+    item_id = request.item_id.strip()
+    item = SHOP_ITEM_BY_ID.get(item_id)
+    position = normalize_decoration_position(request.x, request.y)
+
+    if item is None:
+        return JSONResponse(
+            status_code=404,
+            content=build_decoration_payload(
+                progress,
+                None,
+                "No encontramos esa decoracion.",
+                ok=False,
+            ),
+        )
+
+    if owned_decoration_count(progress, item_id) <= placed_decoration_count(progress, item_id):
+        return JSONResponse(
+            status_code=409,
+            content=build_decoration_payload(
+                progress,
+                None,
+                "Primero compra otra copia de esa decoracion.",
+                ok=False,
+            ),
+        )
+
+    if position is None:
+        return JSONResponse(
+            status_code=400,
+            content=build_decoration_payload(
+                progress,
+                None,
+                "Elige un lugar dentro de la aldea.",
+                ok=False,
+            ),
+        )
+
+    decoration = {
+        "id": next_decoration_id(progress),
+        "item_id": item_id,
+        "position": position,
+        "rotation": 0,
+        "scale": 1,
+    }
+    progress.placed_decorations.append(decoration)
+    saved_progress = progress_store.save(progress)
+    events = [{"type": "decoration_placed", "decoration": decoration}]
+    await manager.broadcast(build_state({"events": events}))
+    return JSONResponse(
+        content=build_decoration_payload(
+            saved_progress,
+            decoration,
+            "Decoracion colocada en la aldea.",
+            events=events,
+        )
+    )
+
+
+@app.patch("/decorations/{decoration_id}")
+async def move_decoration(decoration_id: str, request: DecorationMoveRequest) -> JSONResponse:
+    progress = progress_store.load()
+    position = normalize_decoration_position(request.x, request.y)
+    decoration = next(
+        (
+            item
+            for item in progress.placed_decorations
+            if item.get("id") == decoration_id
+        ),
+        None,
+    )
+
+    if decoration is None:
+        return JSONResponse(
+            status_code=404,
+            content=build_decoration_payload(
+                progress,
+                None,
+                "No encontramos esa decoracion colocada.",
+                ok=False,
+            ),
+        )
+
+    if position is None:
+        return JSONResponse(
+            status_code=400,
+            content=build_decoration_payload(
+                progress,
+                decoration,
+                "Elige un lugar dentro de la aldea.",
+                ok=False,
+            ),
+        )
+
+    decoration["position"] = position
+    saved_progress = progress_store.save(progress)
+    events = [{"type": "decoration_moved", "decoration": decoration}]
+    await manager.broadcast(build_state({"events": events}))
+    return JSONResponse(
+        content=build_decoration_payload(
+            saved_progress,
+            decoration,
+            "Decoracion reubicada.",
+            events=events,
+        )
+    )
+
+
+@app.delete("/decorations/{decoration_id}")
+async def remove_decoration(decoration_id: str) -> JSONResponse:
+    progress = progress_store.load()
+    decoration = next(
+        (
+            item
+            for item in progress.placed_decorations
+            if item.get("id") == decoration_id
+        ),
+        None,
+    )
+
+    if decoration is None:
+        return JSONResponse(
+            status_code=404,
+            content=build_decoration_payload(
+                progress,
+                None,
+                "No encontramos esa decoracion colocada.",
+                ok=False,
+            ),
+        )
+
+    progress.placed_decorations = [
+        item
+        for item in progress.placed_decorations
+        if item.get("id") != decoration_id
+    ]
+    saved_progress = progress_store.save(progress)
+    events = [{"type": "decoration_removed", "decoration": decoration}]
+    await manager.broadcast(build_state({"events": events}))
+    return JSONResponse(
+        content=build_decoration_payload(
+            saved_progress,
+            decoration,
+            "Decoracion guardada en inventario.",
+            events=events,
         )
     )
 

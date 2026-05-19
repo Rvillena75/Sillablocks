@@ -18,15 +18,22 @@ class ShopItem:
     unlocks_zone: str | None = None
 
     def as_dict(self, progress: GameProgress | None = None) -> dict[str, Any]:
-        purchased = False
+        owned_count = 0
+        placed_count = 0
         affordable = False
         if progress is not None:
-            purchased = self.item_id in progress.purchased_items
+            owned_count = progress.purchased_items.count(self.item_id)
             affordable = (
                 progress.lumens >= self.cost_lumens
                 and progress.fragments >= self.cost_fragments
             )
+            placed_count = sum(
+                1
+                for decoration in progress.placed_decorations
+                if decoration.get("item_id") == self.item_id
+            )
 
+        available_to_place = max(owned_count - placed_count, 0)
         return {
             "item_id": self.item_id,
             "name": self.name,
@@ -36,8 +43,12 @@ class ShopItem:
                 "lumens": self.cost_lumens,
                 "fragments": self.cost_fragments,
             },
-            "purchased": purchased,
-            "affordable": affordable and not purchased,
+            "purchased": owned_count > 0,
+            "affordable": affordable,
+            "placed": placed_count > 0,
+            "owned_count": owned_count,
+            "placed_count": placed_count,
+            "available_to_place": available_to_place,
             "restores_item": self.restores_item,
             "unlocks_zone": self.unlocks_zone,
         }
@@ -56,53 +67,45 @@ class PurchaseResult:
 SHOP_ITEMS: tuple[ShopItem, ...] = (
     ShopItem(
         item_id="small_lantern",
-        name="Farol pequeno",
-        description="Agrega una luz suave a la aldea.",
+        name="Farol de luciernagas",
+        description="Decoracion opcional para iluminar un rincon de la aldea.",
         category="decoration",
-        cost_lumens=8,
-        restores_item="small_lantern",
+        cost_lumens=6,
     ),
     ShopItem(
         item_id="glowing_tree",
-        name="Arbol luminoso",
-        description="Devuelve brillo y color al bosque cercano.",
+        name="Flores brillantes",
+        description="Parche de flores para decorar caminos y plazas.",
         category="decoration",
-        cost_lumens=10,
-        restores_item="glowing_tree",
+        cost_lumens=6,
     ),
     ShopItem(
         item_id="restored_sign",
-        name="Senal restaurada",
-        description="Marca el camino para nuevas aventuras.",
+        name="Cartel pintado",
+        description="Un cartel bonito para personalizar la entrada.",
         category="decoration",
-        cost_lumens=12,
-        restores_item="restored_sign",
+        cost_lumens=7,
     ),
     ShopItem(
         item_id="decorated_house",
-        name="Casa decorada",
-        description="Personaliza una casa de la aldea.",
+        name="Banco de plaza",
+        description="Asiento decorativo para armar un lugar de descanso.",
         category="decoration",
-        cost_lumens=15,
-        restores_item="decorated_house",
+        cost_lumens=8,
     ),
     ShopItem(
         item_id="path_to_village",
-        name="Abrir camino al Pueblo",
-        description="Abre una ruta hacia el Pueblo de los Mensajes.",
-        category="unlock",
-        cost_fragments=1,
-        restores_item="path_to_village",
-        unlocks_zone="village",
+        name="Cerca de madera",
+        description="Decoracion para ordenar bordes y senderos.",
+        category="decoration",
+        cost_lumens=8,
     ),
     ShopItem(
         item_id="restored_bridge",
-        name="Restaurar puente",
-        description="Reconstruye un puente para cruzar a nuevas zonas.",
-        category="unlock",
-        cost_fragments=2,
-        restores_item="restored_bridge",
-        unlocks_zone="bridge_path",
+        name="Fuente pequena",
+        description="Adorno central para darle vida a la plaza.",
+        category="decoration",
+        cost_lumens=10,
     ),
 )
 
@@ -127,27 +130,17 @@ def buy_shop_item(progress: GameProgress, item_id: str) -> PurchaseResult:
         return PurchaseResult(
             ok=False,
             code="unknown_item",
-            message="No encontramos esa mejora.",
+            message="No encontramos esa decoracion.",
             item=None,
             events=[],
             status_code=404,
-        )
-
-    if item.item_id in progress.purchased_items:
-        return PurchaseResult(
-            ok=False,
-            code="already_purchased",
-            message="Esa mejora ya esta en la aldea.",
-            item=item,
-            events=[],
-            status_code=409,
         )
 
     if progress.lumens < item.cost_lumens or progress.fragments < item.cost_fragments:
         return PurchaseResult(
             ok=False,
             code="not_enough_resources",
-            message="Aun faltan recursos para esa mejora.",
+            message="Aun faltan recursos para esa decoracion.",
             item=item,
             events=[],
             status_code=400,
@@ -191,7 +184,7 @@ def buy_shop_item(progress: GameProgress, item_id: str) -> PurchaseResult:
     return PurchaseResult(
         ok=True,
         code="purchased",
-        message="Mejora agregada a la aldea.",
+        message="Decoracion agregada a la aldea.",
         item=item,
         events=events,
     )

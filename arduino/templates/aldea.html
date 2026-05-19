@@ -24,6 +24,8 @@
     <section class="village-map" aria-label="Aldea">
       <div class="village-scene">
         <div class="village-path" id="pathToVillage"></div>
+        <div class="placed-decorations-layer" id="placedDecorationsLayer" aria-label="Decoraciones colocadas"></div>
+        <div class="decoration-preview" id="decorationPreview" aria-hidden="true" hidden></div>
         <div class="glowing-tree" id="glowingTree"></div>
         <div class="small-lantern" id="smallLantern"></div>
         <div class="village-lumo" id="villageLumo" aria-label="Lumo">
@@ -56,20 +58,39 @@
     </section>
 
     <aside class="village-summary">
+      <div class="village-resources" aria-label="Recursos disponibles">
+        <span class="village-resource-pill">
+          <strong id="resourceLumens">99</strong>
+          <small>Lúmenes</small>
+        </span>
+        <span class="village-resource-pill">
+          <strong id="resourceFragments">99</strong>
+          <small>Fragmentos</small>
+        </span>
+      </div>
+
       <div class="village-tabs" role="tablist" aria-label="Aldea">
-        <button class="village-tab is-active" id="shopTab" type="button" role="tab" aria-selected="true" aria-controls="shopPanel" data-tab-target="shopPanel">Tienda</button>
+        <button class="village-tab is-active" id="shopTab" type="button" role="tab" aria-selected="true" aria-controls="shopPanel" data-tab-target="shopPanel">Decoraciones</button>
         <button class="village-tab" id="achievementsTab" type="button" role="tab" aria-selected="false" aria-controls="achievementsPanel" data-tab-target="achievementsPanel">Sala de trofeos</button>
       </div>
 
       <section class="village-tab-panel shop-panel is-active" id="shopPanel" role="tabpanel" aria-labelledby="shopTab">
         <div class="village-panel-heading">
           <span>
-            <h2>Tienda de la Aldea</h2>
-            <small id="shopSummary">Cargando mejoras</small>
+            <h2>Decoraciones</h2>
+            <small id="shopSummary">Personalización opcional</small>
           </span>
-          <button class="control-button shop-refresh" id="refreshShop" type="button">Actualizar</button>
+          <div class="village-panel-actions">
+            <button class="control-button edit-mode-button" id="editVillageMode" type="button">Modo edición</button>
+            <button class="control-button shop-refresh" id="refreshShop" type="button">Actualizar</button>
+          </div>
         </div>
-        <p class="village-message" id="shopMessage" data-tone="info">Cargando mejoras.</p>
+        <div class="village-concepts" aria-label="Tipos de objetos">
+          <span><strong>Objetos funcionales</strong>No se mueven. Viven en misiones.</span>
+          <span><strong>Decoraciones</strong>Opcionales para personalizar la aldea.</span>
+        </div>
+        <p class="village-message" id="shopMessage" data-tone="info">Elige adornos para personalizar la aldea.</p>
+        <div class="decoration-inventory-tray" id="decorationInventoryTray" aria-label="Decoraciones disponibles para colocar" hidden></div>
         <div class="shop-list" id="shopList" aria-live="polite"></div>
       </section>
 
