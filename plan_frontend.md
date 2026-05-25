@@ -1,10 +1,14 @@
 # Plan frontend y loop de juego: Phaser 4 + TypeScript + Vite
 
+Estado actual de esta iteracion: `frontend/` es la demo oficial del juego.
+Debe correr sin hardware, sin NFC real y sin backend obligatorio. FastAPI,
+`arduino/templates/` y `frontend-pixi/` quedan como legacy/alternativos.
+
 ## 1. Objetivo
 
-Evolucionar SilaBlocks desde el prototipo visual HTML/CSS hacia una experiencia
-de juego 2D con Phaser 4, TypeScript y Vite, sin romper el backend FastAPI ni el
-contrato NFC actual.
+Consolidar SilaBlocks como experiencia de juego 2D en `frontend/` con React,
+Phaser 4, TypeScript y Vite. El backend FastAPI y el contrato NFC se conservan
+como integracion futura, pero no son obligatorios para correr la demo oficial.
 
 El objetivo del MVP no es construir una plataforma completa. Es cerrar un loop
 jugable y demostrable:
@@ -15,8 +19,8 @@ Inicio / Mapa -> Mision -> Recompensa -> Aldea -> Siguiente mision
 
 En la demo inicial puede simplificarse a:
 
-- `/`: mision actual.
-- `/aldea`: tienda/progreso.
+- vista Mision dentro de `frontend/`.
+- vista Aldea dentro de `frontend/`.
 - debug visible, pero secundario.
 
 ## 2. Stack objetivo
@@ -24,8 +28,8 @@ En la demo inicial puede simplificarse a:
 - Motor visual: Phaser 4.
 - Lenguaje frontend: TypeScript.
 - Build/dev server: Vite.
-- Backend: FastAPI + WebSocket.
-- Contrato NFC estable: `GET /nfc?letra=<valor>`.
+- Backend: FastAPI + WebSocket opcional/legacy.
+- Contrato NFC estable: `GET /nfc?letra=<valor>` para integracion futura.
 - Animaciones especiales: spritesheets primero; Rive despues para Lumo u otras
   microinteracciones complejas.
 - Diseno/prototipo: Figma.
@@ -38,15 +42,16 @@ Rive. Rive no debe bloquear la primera version jugable.
 
 ## 3. Separacion de responsabilidades
 
-FastAPI sigue siendo la fuente de verdad:
+Para esta iteracion, `frontend/` debe funcionar como demo independiente:
 
-- recibe NFC desde telefono o RFID;
-- mantiene el buffer por bloques;
-- valida misiones;
+- simula cubos desde botones en pantalla;
+- mantiene buffer por bloques en modo local;
+- valida misiones dentro del estado local de demo;
 - genera eventos pedagogicos y visuales;
-- administra recompensas;
-- persiste progreso local;
-- expone WebSocket y endpoints de estado.
+- permite probar aldea y compras sin servidor.
+
+FastAPI puede volver a ser fuente de verdad cuando se retome hardware o
+persistencia real, pero no debe bloquear la demo React/Phaser.
 
 Phaser no valida respuestas. Phaser interpreta estado y eventos para animar:
 
@@ -60,29 +65,23 @@ Phaser no valida respuestas. Phaser interpreta estado y eventos para animar:
 Arquitectura objetivo:
 
 ```txt
-Cubos NFC/RFID
+Botones de cubos en frontend/
    |
-Telefono o puente serial
-   |
-GET /nfc?letra=...
-   |
-FastAPI
+localDemoState
    |- buffer por bloques
-   |- engine de misiones
-   |- progreso local
-   |- tienda
-   |- WebSocket /ws
+   |- engine local de demo
+   |- progreso local en memoria
+   |- tienda local
+   |- eventos
    |
 Frontend Phaser
-   |- BootScene
-   |- MapScene
-   |- MissionScene
-   |- RewardScene
-   |- VillageScene
-   |- DebugOverlay
+   |- PhaserStage
+   |- createStorybookGame
+   |- StorybookScene
+   |- sceneBus
 ```
 
-## 4. Contrato backend que no se debe romper
+## 4. Contrato backend legacy que no se debe romper
 
 Mantener:
 
@@ -170,7 +169,9 @@ Ejemplo de payload:
 }
 ```
 
-Regla clave: el backend decide que paso; Phaser decide como se ve.
+Regla clave: el estado de juego decide que paso; Phaser decide como se ve. En
+esta iteracion ese estado puede ser local en `frontend/` o venir de FastAPI si
+se levanta como integracion opcional.
 
 ## 7. Bosque de las Silabas como primera zona
 
@@ -293,25 +294,39 @@ frontend/
   tsconfig.json
   index.html
   src/
-    main.ts
-    game.ts
+    main.tsx
+    App.tsx
     api/
       backendClient.ts
       types.ts
-    scenes/
-      BootScene.ts
-      MapScene.ts
-      MissionScene.ts
-      RewardScene.ts
-      VillageScene.ts
-      DebugOverlay.ts
+    components/
+      PhaserStage.tsx
+      MissionView.tsx
+      VillageView.tsx
+      DebugPanel.tsx
+    game/
+      bridge/
+        sceneBus.ts
+      data/
+        storybookAssets.ts
+      state/
+        localDemoState.ts
+      phaser/
+        bootstrap/
+          createStorybookGame.ts
+        scenes/
+          StorybookScene.ts
+        systems/
+        entities/
+        fx/
+    deprecated/
+      phaser-scenes/
+        createLegacyGame.ts
+        scenes/
     systems/
       EventBus.ts
       MissionEventPlayer.ts
       ShopState.ts
-    ui/
-      buttons.ts
-      text.ts
     assets/
       manifest.ts
   public/
@@ -324,57 +339,43 @@ frontend/
       audio/
 ```
 
-Durante desarrollo:
+Durante desarrollo oficial:
 
 ```txt
-FastAPI: http://localhost:5000
 Vite:    http://localhost:5173
 ```
 
 Para demo empaquetada:
 
 1. Ejecutar `npm run build` en `frontend/`.
-2. Servir `frontend/dist/` desde FastAPI.
-3. Mantener `/nfc`, `/buffer`, `/ws`, `/progress`, `/shop` y `/buy` en el mismo
-   origen.
+2. Ejecutar `npm run preview` en `frontend/`.
+3. Abrir `http://localhost:4173`.
 
-## 10. Escenas Phaser
+Si FastAPI esta levantado, Vite puede proxificar `/nfc`, `/buffer`, `/ws`,
+`/progress`, `/shop` y `/buy`. Si no esta levantado, el frontend debe seguir en
+modo local.
 
-### BootScene
+## 10. Flujo Phaser oficial
 
-- Carga assets base.
-- Inicializa `BackendClient`.
-- Lee `/buffer` y `/progress`.
-- Pasa a `MissionScene` o `MapScene`.
+`PhaserStage` es el unico componente que crea `Phaser.Game`.
 
-### MapScene
+```txt
+main.tsx -> App -> MissionView -> PhaserStage -> createStorybookGame -> StorybookScene
+```
 
-- Muestra zonas desbloqueadas.
-- Permite entrar a la mision actual.
-- Puede ser minimal para el MVP.
-
-### MissionScene
+### StorybookScene
 
 - Renderiza Bosque de las Silabas.
-- Escucha WebSocket.
-- Convierte eventos del backend en animaciones.
-- Dibuja cubos fisicos segun `current_blocks`.
-- Mantiene debug secundario.
+- Recibe estado desde React mediante `sceneBus`.
+- Convierte eventos del estado de juego en animaciones.
+- Dibuja cubos segun `current_blocks`.
+- Deja UI, controles, debug y aldea a React.
 
-### RewardScene
+El stack anterior `BootScene/MissionScene/RewardScene/VillageScene/DebugOverlay`
+esta conservado en `src/deprecated/phaser-scenes/` y no debe recibir trabajo
+nuevo.
 
-- Muestra Lumenes/Fragmentos ganados.
-- Muestra objeto restaurado.
-- Permite ir a aldea o siguiente mision.
-
-### VillageScene
-
-- Consume `/progress` y `/shop`.
-- Renderiza compras disponibles.
-- Llama `POST /buy`.
-- Actualiza la aldea segun compras persistidas.
-
-### DebugOverlay
+### Debug React
 
 Debe estar disponible para demo, pero no dominar la pantalla.
 
@@ -392,22 +393,20 @@ Mostrar:
 
 ## 11. Orden ideal de implementacion adaptado al stack
 
-### Fase 1: Persistencia y tienda en FastAPI
+### Fase 1: Demo local en frontend/
 
-- Crear `arduino/game_state.json`.
-- Agregar modelo de progreso local.
-- Crear inventario de recompensas/compras.
-- Agregar `GET /progress`.
-- Agregar `GET /shop`.
-- Agregar `POST /buy`.
-- Agregar tests de compra, gasto, persistencia y desbloqueo.
+- Mantener estado local en memoria.
+- Crear inventario de recompensas/compras para la demo.
+- Permitir completar misiones sin backend.
+- Permitir comprar en la aldea sin backend.
+- Mantener FastAPI solo como integracion opcional.
 
 Criterio de aceptacion:
 
 - Completar una mision suma recompensas.
 - Comprar descuenta Lumenes o Fragmentos.
-- Una compra queda guardada al reiniciar el servidor.
-- `/nfc?letra=...` sigue funcionando igual.
+- Una compra se ve en la aldea durante la sesion.
+- `npm run build` pasa en `frontend/`.
 
 ### Fase 2: Eventos visuales en el engine
 
@@ -419,7 +418,7 @@ Criterio de aceptacion:
 
 Criterio de aceptacion:
 
-- El backend comunica que paso sin depender de texto libre.
+- El estado de juego comunica que paso sin depender de texto libre.
 - El frontend puede animar cada cambio desde eventos.
 
 ### Fase 3: Scaffold Phaser + Vite + TypeScript
@@ -433,10 +432,10 @@ Criterio de aceptacion:
 Criterio de aceptacion:
 
 - Vite muestra una escena Phaser.
-- La escena recibe cambios al escanear cubos.
-- El debug muestra estado backend real.
+- La escena recibe cambios al usar cubos en pantalla.
+- El debug muestra estado de juego real.
 
-### Fase 4: MissionScene del Bosque de las Silabas
+### Fase 4: StorybookScene del Bosque de las Silabas
 
 - Reemplazar pantalla generica por escena Phaser.
 - Agregar bosque, camino, niebla, farol, Lumo, fragmentos flotantes y cubos.
@@ -448,28 +447,28 @@ Criterio de aceptacion:
 - Al completar la palabra, hay luz, color y baja la niebla.
 - La mision se siente como "ayudar a Lumo", no como un formulario.
 
-### Fase 5: RewardScene
+### Fase 5: Efectos de recompensa
 
-- Mostrar recompensas tras completar mision.
+- Mostrar recompensas tras completar mision dentro del flujo oficial.
 - Mostrar objeto restaurado.
-- Dar salida clara hacia aldea o siguiente mision.
+- Dar salida clara hacia aldea o siguiente mision desde React.
 
 Criterio de aceptacion:
 
 - El nino entiende que completo una accion y gano recursos.
 
-### Fase 6: VillageScene como tienda real
+### Fase 6: Aldea React/Phaser como tienda real
 
-- Convertir `/aldea` en aldea interactiva.
+- Convertir la vista Aldea de `frontend/` en aldea interactiva.
 - Mostrar costos, bloqueos y compras realizadas.
-- Llamar `POST /buy`.
-- Reflejar cambios persistentes.
+- Usar modo local o backend opcional para comprar.
+- Reflejar cambios de la sesion.
 
 Criterio de aceptacion:
 
 - La aldea permite gastar Lumenes/Fragmentos.
 - Las compras cambian visualmente la aldea.
-- El progreso se mantiene al reiniciar.
+- En modo local, el progreso se mantiene mientras la pagina este abierta.
 
 ### Fase 7: Arte, audio y animaciones finales
 
@@ -484,7 +483,7 @@ Criterio de aceptacion:
 El siguiente cambio practico deberia ser:
 
 ```txt
-Convertir la aldea en un lugar donde realmente se gastan Lumenes y Fragmentos.
+Pulir la aldea de frontend/ como lugar donde realmente se gastan Lumenes y Fragmentos.
 ```
 
 Motivo: cierra el loop motivacional antes de invertir mas en arte:
@@ -497,19 +496,19 @@ Implementacion concreta del siguiente PR/cambio:
 
 - agregar `arduino/game_state.json`;
 - agregar inventario de compras;
-- agregar `/progress`, `/shop` y `/buy`;
-- conectar recompensas de misiones con progreso persistente;
-- actualizar `/aldea` actual para usar datos reales, aunque todavia sea HTML;
-- agregar tests backend para compra, recursos insuficientes y persistencia.
+- completar el estado local de progreso, tienda y compras;
+- conectar recompensas de misiones con la aldea local;
+- mantener la UI HTML de FastAPI como legacy;
+- agregar pruebas frontend cuando se incorpore un runner.
 
-Despues de eso conviene crear el scaffold Phaser.
+El scaffold Phaser ya existe en `frontend/`; el foco ahora es consolidarlo.
 
 ## 13. Riesgos
 
 - Migrar visuales antes de persistir progreso puede dejar una aldea bonita pero
   sin loop de juego.
-- Migrar todo a Phaser de una vez puede romper la demo NFC. Mantener HTML actual
-  como fallback hasta que Phaser sea estable.
+- Volver a presentar la UI embebida como fallback oficial crea ambiguedad. Debe
+  quedar como legacy mientras `frontend/` avanza.
 - Rive puede agregar complejidad temprana. Usar spritesheets primero.
 - Assets finales pueden retrasar avances. Partir con placeholders y reemplazar
   despues.

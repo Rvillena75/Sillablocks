@@ -1,271 +1,130 @@
 # SilaBlocks
 
-SilaBlocks es un prototipo fisico-digital para practicar lectura inicial. En el
-MVP actual, el nino usa cubos fisicos con NFC/RFID de letras individuales para
-construir palabras; el PC
-recibe esos inputs por red local y muestra una experiencia visual con misiones,
-recompensas y una aldea donde se gastan recursos.
-
-El objetivo del MVP actual es demostrar este loop:
+SilaBlocks es un prototipo de juego educativo para lectura inicial. Para esta
+iteracion, la demo oficial del software del juego vive en:
 
 ```txt
-Escanear cubos -> completar mision -> ganar Lumenes/Fragmentos -> comprar en la aldea -> ver progreso persistente
+frontend/
 ```
 
-## Estado actual
+Ese frontend usa React + Phaser 4 + TypeScript + Vite. Debe poder correr sin
+hardware, sin NFC real y sin levantar el backend FastAPI. Cuando FastAPI esta
+disponible, el frontend puede consumir sus endpoints; cuando no esta disponible,
+usa un estado local de demo en memoria.
 
-El proyecto ya tiene un MVP local funcional:
+## Camino oficial
 
-- Backend FastAPI en `arduino/sila_server.py`.
-- Contrato NFC estable: `GET /nfc?letra=<valor>`.
-- Buffer por bloques fisicos, no solo texto plano.
-- Cinco misiones: `MAMA`, `PAPA`, `CASA`, `MESA`, `BOTA`.
-- Pantalla de mision en `/`.
-- Aldea/tienda en `/aldea`.
-- Progreso local de demo en `arduino/game_state.json`, reiniciado al arrancar
-  el servidor.
-- Estado inicial de pruebas con 99 Lumenes y 99 Fragmentos para poder validar
-  compras y decoraciones sin tener que completar todo el flujo antes.
-- Estado base versionado en `arduino/game_state.example.json`.
-- Inventario de tienda con `GET /shop` y compras con `POST /buy`.
-- Eventos visuales para mision y tienda.
-- Tests automatizados con `pytest`.
-
-El stack futuro definido para el frontend de juego es:
-
-```txt
-Phaser 4 + TypeScript + Vite
-```
-
-Ya existe una app híbrida en `frontend/`: React/HTML/CSS maneja la interfaz
-compleja y Phaser 4 maneja la escena jugable del bosque. El frontend activo para
-demo estable sigue siendo HTML/CSS/JavaScript servido por FastAPI en `/` y
-`/aldea`; la app React + Phaser se corre aparte durante desarrollo y debe
-alcanzar paridad antes de reemplazarlo.
-Tambien existe un experimento visual en `frontend-pixi/` para comparar PixiJS
-como alternativa mas flexible para una experiencia 2D infantil y llamativa.
-
-## Requisitos
-
-- Windows + PowerShell.
-- Python 3.11+.
-- Dependencias de `arduino/requirements.txt`.
-- Opcional para RFID: Arduino Uno + RC522 + puente serial.
-
-## Instalacion
-
-Desde la raiz del repositorio:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r arduino\requirements.txt
-```
-
-## Ejecutar el servidor
-
-```powershell
-.\.venv\Scripts\python.exe arduino\sila_server.py
-```
-
-El servidor queda en:
-
-```txt
-http://localhost:5000
-```
-
-Para usar un telefono en la misma red WiFi, abrir la URL con la IP local del PC:
-
-```txt
-http://<PC_LOCAL_IP>:5000/nfc?letra=M
-```
-
-## Pantallas principales
-
-- `http://localhost:5000/`: mision actual.
-- `http://localhost:5000/aldea`: aldea y tienda.
-
-## Ejecutar frontend Phaser
-
-Primero deja corriendo FastAPI en `http://localhost:5000`. En otra terminal:
+Usa estos comandos desde la raiz del repositorio:
 
 ```powershell
 cd frontend
 npm install
 npm run dev
+npm run build
+npm run preview
 ```
 
-Vite queda en:
+URLs:
 
 ```txt
-http://localhost:5173
+Dev:     http://localhost:5173
+Preview: http://localhost:4173
 ```
 
-El dev server usa proxy local hacia FastAPI, por lo que Phaser consume los mismos
-endpoints reales: `/buffer`, `/progress`, `/shop`, `/buy`, `/nfc` y `/ws`.
-
-La escena Phaser se limita al mundo visual: bosque, Lumo, farol, niebla, cubos y
-animaciones. Header, panel de mision, cubos sugeridos, acciones, debug, aldea y
-tienda viven en React/HTML/CSS.
-
-## Ejecutar frontend PixiJS
-
-Primero deja corriendo FastAPI en `http://localhost:5000`. En otra terminal:
-
-```powershell
-cd frontend-pixi
-npm install
-npm run dev
-```
-
-Vite queda en:
+El flujo oficial para esta iteracion es software-only:
 
 ```txt
-http://localhost:5174
+Abrir frontend -> elegir cubos en pantalla -> completar mision -> ver feedback -> entrar a aldea
 ```
 
-Este prototipo usa PixiJS para probar una direccion visual mas ilustrada:
-bosque, Lumo, farol, cubos fisicos, letras flotantes y feedback animado.
+No se requiere telefono, Arduino, lector RFID, NFC Tools ni servidor Python para
+probar la demo React/Phaser.
 
-## Flujo de demo manual
+## Que contiene frontend/
 
-1. Abrir `http://localhost:5000/`.
-2. Si quieres dejar todo en cero antes de presentar:
+- React maneja header, paneles, bandeja de cubos, aldea, tienda y debug.
+- Phaser renderiza la escena jugable del bosque dentro de `PhaserStage`.
+- `frontend/src/game/state/localDemoState.ts` mantiene un estado local en memoria para
+  que la demo corra sin backend.
+- `frontend/src/api/backendClient.ts` intenta usar FastAPI si existe y cae al
+  modo local si no hay backend.
+- El flujo Phaser oficial es `MissionView -> PhaserStage -> createStorybookGame
+  -> StorybookScene`; el stack anterior vive en
+  `frontend/src/deprecated/phaser-scenes/` como referencia legacy.
+
+Ver detalles especificos en [frontend/README.md](frontend/README.md).
+
+## Legacy y alternativas
+
+Estos caminos se conservan por compatibilidad, pruebas o referencia, pero no son
+la demo oficial de esta iteracion:
+
+- `arduino/sila_server.py`: backend FastAPI legacy/compatible para integracion
+  futura con hardware y persistencia local.
+- `arduino/templates/` y `arduino/static/`: UI embebida legacy servida por
+  FastAPI en `/` y `/aldea`.
+- `frontend-pixi/`: experimento visual alternativo con PixiJS. No es el camino
+  oficial.
+- `scripts/reset_demo.ps1`: utilidad legacy para resetear la demo FastAPI.
+
+No borres esos caminos todavia; pueden servir para integracion posterior, pruebas
+de contrato o comparacion visual.
+
+## Backend opcional
+
+Si se quiere probar la integracion legacy con FastAPI:
 
 ```powershell
-.\scripts\reset_demo.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r arduino\requirements.txt
+python arduino\sila_server.py
 ```
 
-El script ejecuta `RESET_TODO`, revisa `/health`, `/buffer` y `/progress`, y
-muestra URLs con la IP local del PC para configurar el telefono.
+Servidor:
 
-3. Escanear o simular:
+```txt
+http://localhost:5000
+```
+
+Con el backend activo, `frontend/` usa el proxy de Vite para `/buffer`,
+`/progress`, `/shop`, `/buy`, `/nfc`, `/mission`, `/decorations` y `/ws`.
+
+## Verificacion
+
+Frontend oficial:
 
 ```powershell
-Invoke-RestMethod "http://localhost:5000/nfc?letra=M"
-Invoke-RestMethod "http://localhost:5000/nfc?letra=A"
-Invoke-RestMethod "http://localhost:5000/nfc?letra=M"
-Invoke-RestMethod "http://localhost:5000/nfc?letra=A"
+cd frontend
+npm run build
 ```
 
-4. Revisar progreso:
+Backend legacy, solo si se toca esa capa:
 
 ```powershell
-Invoke-RestMethod http://localhost:5000/progress
-```
-
-5. Abrir `http://localhost:5000/aldea`.
-6. Comprar una mejora si hay recursos:
-
-```powershell
-Invoke-RestMethod http://localhost:5000/buy -Method Post -ContentType "application/json" -Body '{"item_id":"small_lantern"}'
-```
-
-7. Resetear demo si se necesita partir limpio:
-
-```powershell
-Invoke-RestMethod "http://localhost:5000/nfc?letra=RESET_TODO"
-```
-
-## API principal
-
-### Estado y pantalla
-
-- `GET /health`: healthcheck.
-- `GET /`: pantalla de mision.
-- `GET /aldea`: pantalla de aldea/tienda.
-- `GET /buffer`: estado completo de mision.
-- `WebSocket /ws`: actualizaciones en tiempo real.
-
-### Input NFC/RFID
-
-- `GET /nfc?letra=<valor>`
-- `POST /nfc`
-- `DELETE /buffer`
-
-Comandos especiales:
-
-- `BORRAR`, `DELETE`, `BACKSPACE`: eliminan el ultimo bloque.
-- `RESET`: reinicia la mision actual.
-- `RESET_TODO`: reinicia toda la demo y progreso persistente.
-- `ENTER`: valida el estado actual.
-- `SIGUIENTE`: avanza despues de completar una mision.
-- `ANTERIOR`: vuelve a la mision anterior.
-
-### Progreso y tienda
-
-- `GET /progress`: recursos, misiones, compras y zonas.
-- `GET /shop`: inventario y disponibilidad.
-- `POST /buy`: compra una mejora.
-
-Ejemplo:
-
-```json
-{
-  "item_id": "small_lantern"
-}
+.\.venv\Scripts\python.exe -m pytest -q --basetemp C:\tmp\sillablocks-pytest
 ```
 
 ## Estructura relevante
 
 ```txt
 .
-├── README.md
-├── AGENTS.md
-├── stack_tecnico.md
-├── plan_frontend.md
-├── docs/
-│   ├── estado_actual.md
-│   ├── contrato_eventos.md
-│   └── proximos_pasos.md
-├── frontend/
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── src/
-├── frontend-pixi/
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── src/
-├── Descripcion del juego/
-├── arduino/
+├── frontend/                 # demo oficial React + Phaser
+├── frontend-pixi/            # alternativa PixiJS, no oficial
+├── arduino/                  # backend/UI embebida legacy + hardware futuro
 │   ├── sila_server.py
-│   ├── game_state.example.json
-│   ├── requirements.txt
-│   ├── rfid_bridge.py
-│   ├── rfid_uid_map.json
-│   ├── game/
-│   │   ├── buffer.py
-│   │   ├── engine.py
-│   │   ├── missions.py
-│   │   ├── progress.py
-│   │   └── shop.py
+│   ├── templates/
 │   ├── static/
-│   └── templates/
+│   └── game/
+├── docs/
+├── scripts/
 └── tests/
 ```
 
-## Tests
+## Reglas de esta iteracion
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q
-```
-
-La suite cubre rutas principales, buffer por bloques, misiones, comandos,
-progreso persistente, tienda y compras.
-
-## Documentacion adicional
-
-- [Estado actual](docs/estado_actual.md)
-- [Proximos pasos](docs/proximos_pasos.md)
-- [Stack tecnico](stack_tecnico.md)
-- [Plan frontend](plan_frontend.md)
-- [Migracion RFID](arduino/RFID_MIGRATION.md)
-
-## Reglas de desarrollo importantes
-
-- No romper `GET /nfc?letra=...`.
-- Mantener `available_blocks` como guia visual, no como filtro duro.
-- Guardar progreso local sin datos personales de ninos.
-- Mantener `arduino/game_state.json` como archivo runtime ignorado por Git.
-- Priorizar demo estable sobre arquitectura compleja.
-- Antes de migrar a Phaser, mantener funcional el MVP HTML actual.
+- `frontend/` es la unica demo oficial.
+- No implementar hardware, NFC real ni backend obligatorio.
+- No redisenar visualmente todavia.
+- Mantener backend, UI embebida y PixiJS como legacy/alternativos sin borrarlos.
+- La prueba minima de cierre es `npm run build` dentro de `frontend/`.

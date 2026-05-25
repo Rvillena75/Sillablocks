@@ -3,6 +3,7 @@
 
 #define RST_PIN 27
 #define NUM_READERS 4
+#define BUTTON_PIN 17
 
 
 // Orden: lector 1, lector 2, lector 3, lector 4.
@@ -18,6 +19,8 @@ MFRC522 readers[NUM_READERS] = {
 void setup() {
   Serial.begin(115200);
   delay(1000);
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   SPI.begin(); // Usa pines SPI por defecto: SCK=18, MISO=19, MOSI=23 en ESP32
 
@@ -47,10 +50,15 @@ void setup() {
     }
   }
 
-  Serial.println("Acerca un tag NFC a cualquier lector...");
+  Serial.println("Acerca un tag NFC a cualquier lector o presiona el boton...");
 }
 
 void loop() {
+  if (digitalRead(BUTTON_PIN) == LOW) {
+  Serial.println("BOTON PRESIONADO");
+  delay(300);
+  }
+
   for (byte i = 0; i < NUM_READERS; i++) {
     if (!readers[i].PICC_IsNewCardPresent()) {
       continue;

@@ -1,6 +1,6 @@
 import Phaser from "phaser";
-import type { BackendClient } from "../api/backendClient";
-import type { GameProgress, MissionState, ShopState } from "../api/types";
+import type { BackendClient } from "../../../api/backendClient";
+import type { GameProgress, MissionState, ShopState } from "../../../api/types";
 
 interface VillageData {
   client: BackendClient;
@@ -81,4 +81,3 @@ export class VillageScene extends Phaser.Scene {
       .on("pointerdown", () => this.scene.start("MissionScene", { client: this.client, mission: this.mission }));
   }
 }
-

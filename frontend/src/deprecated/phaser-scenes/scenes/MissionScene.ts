@@ -1,9 +1,9 @@
 import Phaser from "phaser";
-import type { BackendClient } from "../api/backendClient";
-import type { MissionState } from "../api/types";
+import type { BackendClient, StateConnection } from "../../../api/backendClient";
+import type { MissionState } from "../../../api/types";
 import type { BootData } from "./BootScene";
 import { DebugOverlay } from "./DebugOverlay";
-import { MissionEventPlayer } from "../systems/MissionEventPlayer";
+import { MissionEventPlayer } from "../../../systems/MissionEventPlayer";
 
 const COMMANDS = ["BORRAR", "RESET", "ENTER", "SIGUIENTE"];
 
@@ -12,7 +12,7 @@ export class MissionScene extends Phaser.Scene {
   private state!: MissionState;
   private debug!: DebugOverlay;
   private eventPlayer = new MissionEventPlayer();
-  private socket: WebSocket | null = null;
+  private socket: StateConnection | null = null;
   private blockGroup!: Phaser.GameObjects.Group;
   private buttonGroup!: Phaser.GameObjects.Group;
   private promptText!: Phaser.GameObjects.Text;

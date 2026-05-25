@@ -1,63 +1,54 @@
 # Proximos pasos cercanos
 
-Actualizado: 2026-05-14.
+Actualizado: 2026-05-23.
 
 ## Objetivo de la siguiente etapa
 
-Consolidar el MVP actual antes de migrar a Phaser. La decision vigente es que
-el MVP use cubos de letras individuales; silabas y otros tipos de bloque quedan
-para iteraciones posteriores:
+Consolidar `frontend/` como la demo oficial React + Phaser. La decision vigente
+para esta iteracion es trabajar solo en software del juego: sin hardware, sin NFC
+real y sin backend obligatorio.
 
 ```txt
-Mision -> recompensa -> progreso persistente -> aldea -> compra -> mundo cambia
+Abrir frontend -> elegir cubos en pantalla -> completar mision -> ver feedback -> entrar a aldea
 ```
 
-El backend ya soporta este loop. Ahora conviene mejorar la experiencia visual,
-automatizar chequeos de demo y preparar la migracion a Phaser 4 sin romper el
-flujo NFC.
+FastAPI puede seguir existiendo como integracion legacy/opcional, pero no debe
+ser el camino recomendado para correr la demo.
 
-## Paso 1: Endurecer demo y setup
+## Paso 1: Consolidar demo React/Phaser
 
 ### Implementar
 
-- Agregar un script de demo/reset, por ejemplo `scripts/reset_demo.ps1`.
-- Agregar checklist de demo local.
-- Documentar como encontrar la IP local del PC.
-- Documentar flujo con telefono y flujo con RFID.
-- Revisar que `RESET_TODO` sea suficiente para limpiar progreso antes de una
-  presentacion.
+- Mantener `frontend/` como unico camino oficial.
+- Mantener comandos oficiales en README raiz y `frontend/README.md`.
+- Verificar que `npm run build` pase dentro de `frontend/`.
+- Mantener modo local sin backend obligatorio.
 
 ### Criterio de aceptacion
 
-- Se puede dejar la demo en estado inicial en un comando.
-- Se puede correr healthcheck, mision, progreso y tienda desde PowerShell.
-- La documentacion explica claramente que URL debe usar el telefono.
+- `cd frontend && npm run dev` abre la demo oficial.
+- La demo corre sin FastAPI, telefono, NFC Tools, Arduino ni RFID.
+- PixiJS y UI embebida aparecen solo como legacy/alternativos.
 
-## Paso 2: Usar eventos visuales en la pantalla de mision actual
+## Paso 2: Pulir loop de mision en frontend/
 
 ### Implementar
 
-- Actualizar `arduino/static/app.js` para reaccionar explicitamente a:
-  - `mission_completed`
-  - `reward_granted`
-  - `scene_restored`
-- Mostrar una micro-recompensa cuando llega `reward_granted`.
-- Hacer que el farol/niebla/restauracion dependan del evento, no solo de
-  `status`.
-- Mantener compatibilidad con el estado actual por si el evento viene vacio.
+- Mejorar el modo local de `frontend/src/game/state/localDemoState.ts`.
+- Alinear los eventos locales con los eventos que ya emite FastAPI.
+- Mantener Phaser como capa visual, sin mover validacion pedagogica a la escena.
 
 ### Criterio de aceptacion
 
-- Al completar `MAMA` con `M`, `A`, `M`, `A`, la respuesta JSON trae eventos y la pantalla anima la
-  restauracion.
-- Si llega una compra o restauracion por WebSocket, la UI no se desordena.
-- Los tests backend siguen pasando.
+- Al completar `MAMA` con botones en pantalla, Phaser actualiza la escena.
+- Al no existir backend, la app no queda bloqueada cargando.
+- `npm run build` sigue pasando.
 
-## Paso 3: Pulir aldea HTML antes de Phaser
+## Paso 3: Pulir aldea React
 
 ### Implementar
 
-- Mejorar mensajes de compra:
+- Mejorar mensajes de compra en `frontend/src/components/VillageView.tsx`:
   - compra realizada;
   - ya comprado;
   - faltan recursos;
@@ -73,7 +64,7 @@ flujo NFC.
 
 - Un usuario puede entender que necesita ganar recursos antes de comprar.
 - Una compra cambia la aldea sin recargar manualmente.
-- El estado persiste tras reiniciar servidor.
+- En modo local, el estado dura mientras la pagina siga abierta.
 
 ## Paso 4: Separar contrato de eventos para Phaser
 
@@ -101,7 +92,7 @@ Estado: implementado en `docs/contrato_eventos.md`.
 - El frontend Phaser puede implementarse sin leer internals del backend.
 - Los eventos tienen nombres estables.
 
-## Paso 5: Crear scaffold Phaser 4 + TypeScript + Vite
+## Paso 5: Scaffold Phaser 4 + TypeScript + Vite
 
 Estado: app híbrida creada en `frontend/`. React/HTML/CSS maneja UI compleja y
 Phaser 4 queda limitado a la escena jugable.
@@ -110,13 +101,11 @@ Phaser 4 queda limitado a la escena jugable.
 
 - Crear `frontend/`.
 - Instalar Phaser 4, TypeScript y Vite.
-- Crear:
-  - `BootScene`
-  - `MissionScene`
-  - `VillageScene`
-  - `RewardScene`
-  - `DebugOverlay`
-- Crear `BackendClient` para:
+- Definir el flujo oficial `MissionView -> PhaserStage -> createStorybookGame
+  -> StorybookScene`.
+- Mover el stack anterior `BootScene/MissionScene/VillageScene/RewardScene` a
+  `frontend/src/deprecated/phaser-scenes/`.
+- Crear `BackendClient` para backend opcional y modo local:
   - `/buffer`
   - `/progress`
   - `/shop`
@@ -126,17 +115,18 @@ Phaser 4 queda limitado a la escena jugable.
 ### Criterio de aceptacion
 
 - `npm run dev` levanta Vite.
-- Phaser lee estado real del backend.
-- La escena muestra al menos bloques actuales, recursos y eventos recientes.
-- El backend FastAPI sigue funcionando en `localhost:5000`.
+- Phaser lee estado local sin backend obligatorio.
+- La escena oficial muestra bloques actuales y responde al estado React.
+- Si FastAPI corre en `localhost:5000`, el frontend puede usarlo como integracion
+  opcional.
 
-Nota: el HTML actual servido por FastAPI en `/` y `/aldea` se mantiene como
-fallback de demo hasta que Phaser alcance paridad funcional.
+Nota: el HTML servido por FastAPI en `/` y `/aldea` queda como UI embebida
+legacy. No es fallback oficial para esta iteracion.
 
-## Paso 6: Migrar MissionScene al Bosque de las Silabas
+## Paso 6: Consolidar StorybookScene del Bosque de las Silabas
 
-Estado: en evaluacion. Existe un primer prototipo PixiJS en `frontend-pixi/`
-para comparar contra Phaser antes de cerrar motor visual.
+Estado: Phaser en `frontend/` es el camino oficial. `frontend-pixi/` queda como
+alternativa experimental no oficial.
 
 ### Implementar
 
@@ -159,15 +149,14 @@ para comparar contra Phaser antes de cerrar motor visual.
 
 ### Implementar
 
-- Leer `/progress` y `/shop`.
+- Leer progreso y tienda desde modo local o backend opcional.
 - Renderizar compras como objetos de la aldea.
-- Llamar `POST /buy`.
 - Animar `item_purchased`, `village_restored` y `zone_unlocked`.
 
 ### Criterio de aceptacion
 
-- La aldea Phaser mantiene paridad funcional con `/aldea` HTML.
-- Las compras siguen persistiendo en `game_state.json`.
+- La aldea React/Phaser no depende de `/aldea` HTML.
+- Las compras funcionan en modo local sin servidor.
 
 ## Paso 8: Assets y audio
 
@@ -196,31 +185,29 @@ para comparar contra Phaser antes de cerrar motor visual.
 
 ## Orden recomendado de implementacion
 
-1. Script/checklist de demo.
-2. Pantalla de mision consumiendo eventos visuales.
-3. Pulido de aldea HTML.
+1. Demo oficial en `frontend/`.
+2. Modo local sin backend obligatorio.
+3. Pulido de aldea React.
 4. Documento de contrato de eventos.
 5. Scaffold Phaser 4.
-6. MissionScene Phaser.
-7. VillageScene Phaser.
+6. StorybookScene Phaser.
+7. Aldea React con posibles efectos Phaser puntuales.
 8. Arte/audio.
 
 ## Riesgos a cuidar
 
-- No cambiar `GET /nfc?letra=...`.
-- No volver a filtrar inputs normales por `available_blocks`.
+- No presentar `frontend-pixi/` ni `arduino/templates/` como camino oficial.
+- No hacer obligatorio FastAPI para probar `frontend/`.
 - No mover validacion pedagogica al frontend.
 - No hacer que Phaser dependa de estructuras internas de Python.
 - No invertir en arte final antes de asegurar estabilidad de demo.
 
-## Definicion de listo para pasar a Phaser
+## Definicion de listo para esta iteracion
 
-Antes de migrar visualmente, deberian cumplirse estos puntos:
+Para cerrar esta iteracion, deberian cumplirse estos puntos:
 
-- Tests backend pasan.
-- `/` completa al menos la primera mision.
-- `/progress` persiste recompensas.
-- `/shop` lista inventario real.
-- `/buy` descuenta recursos y persiste compra.
-- `/aldea` muestra cambios reales.
-- Eventos de mision y tienda existen y estan documentados.
+- `frontend/` esta documentado como demo oficial.
+- `npm run build` pasa dentro de `frontend/`.
+- La app corre sin backend obligatorio.
+- Backend FastAPI, UI embebida y PixiJS quedan documentados como
+  legacy/alternativos.

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { MissionState } from "../api/types";
+import type { MissionState } from "../../../api/types";
 
 export class DebugOverlay {
   private panel: Phaser.GameObjects.Text;
@@ -34,4 +34,3 @@ export class DebugOverlay {
     ]);
   }
 }
-

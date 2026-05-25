@@ -1,6 +1,6 @@
 import Phaser from "phaser";
-import { BackendClient } from "../api/backendClient";
-import type { GameProgress, MissionState, ShopState } from "../api/types";
+import { BackendClient } from "../../../api/backendClient";
+import type { GameProgress, MissionState, ShopState } from "../../../api/types";
 
 export interface BootData {
   client: BackendClient;
@@ -42,4 +42,3 @@ export class BootScene extends Phaser.Scene {
     }
   }
 }
-

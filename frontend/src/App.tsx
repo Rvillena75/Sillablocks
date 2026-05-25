@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BackendClient } from "./api/backendClient";
+import { BackendClient, type StateConnection } from "./api/backendClient";
 import type { GameProgress, MissionState, ShopState } from "./api/types";
 import { GameHeader } from "./components/GameHeader";
 import { MissionView } from "./components/MissionView";
@@ -7,7 +7,7 @@ import { VillageView } from "./components/VillageView";
 
 export function App() {
   const client = useMemo(() => new BackendClient(), []);
-  const socketRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<StateConnection | null>(null);
   const [view, setView] = useState<"mission" | "village">("mission");
   const [mission, setMission] = useState<MissionState | null>(null);
   const [progress, setProgress] = useState<GameProgress | null>(null);

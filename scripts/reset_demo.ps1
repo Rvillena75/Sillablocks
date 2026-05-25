@@ -2,6 +2,9 @@ param(
     [string]$ServerUrl = "http://localhost:5000"
 )
 
+# Legacy helper: this script resets the optional FastAPI backend demo.
+# It is not required for the official React/Phaser demo in frontend/.
+
 $ErrorActionPreference = "Stop"
 $baseUrl = $ServerUrl.TrimEnd("/")
 

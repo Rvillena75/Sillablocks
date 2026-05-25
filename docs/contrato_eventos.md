@@ -115,7 +115,7 @@ Uso en Phaser:
 
 - animar contador de Lumenes/Fragmentos;
 - mostrar micro-recompensa;
-- preparar `RewardScene`.
+- preparar efectos de recompensa dentro del flujo React/Phaser oficial.
 
 ### `scene_restored`
 
@@ -236,6 +236,5 @@ Uso en Phaser:
 - Mantener reconexion WebSocket.
 - Mantener un fallback por polling o recarga de `/buffer`.
 - Mantener visible un debug overlay durante el MVP.
-- Mantener el HTML actual de FastAPI como fallback de demo hasta que Phaser
-  alcance paridad funcional.
-
+- Mantener la UI HTML de FastAPI solo como legacy. El fallback oficial para esta
+  iteracion es el modo local de `frontend/`.

@@ -2,46 +2,46 @@
 
 ## 1. Decision
 
-El stack recomendado para SilaBlocks es:
+El stack oficial para la demo del juego SilaBlocks en esta iteracion es:
 
 ```txt
 Frontend de juego: React + Phaser 4 + TypeScript + Vite
-Backend: FastAPI + WebSocket
-Persistencia MVP: JSON local
-Persistencia futura: SQLite
-Input fisico: NFC telefono y/o Arduino RFID -> FastAPI
+Backend: opcional/legacy, FastAPI + WebSocket
+Persistencia demo: estado local en memoria dentro de frontend/
+Persistencia futura: backend local o SQLite
+Input fisico: fuera de alcance para esta iteracion
 Animaciones: spritesheets/TexturePacker primero, Rive despues
 Arte: Figma + herramienta 2D dedicada
 Audio: Audacity + sonidos con licencia revisada
 ```
 
-Esta decision prioriza un MVP local, estable y demostrable: el nino escanea
-cubos fisicos, la pantalla reacciona en tiempo real, la mision entrega
-recompensas y la aldea cambia de forma persistente.
+Esta decision prioriza una demo software-only, estable y demostrable: el usuario
+elige cubos en pantalla, la mision entrega feedback y la aldea refleja progreso
+sin requerir telefono, Arduino, NFC real ni backend obligatorio.
 
-Nota de evaluacion: tambien se esta probando `PixiJS + TypeScript + Vite` en
-`frontend-pixi/` como alternativa visual. La decision final del motor debe
-tomarse por calidad visual, velocidad de iteracion y facilidad de mantener el
-contrato FastAPI.
+`frontend/` es el camino oficial. `frontend-pixi/` queda como alternativa
+experimental no oficial. `arduino/templates/` queda como UI embebida legacy.
 
 ## 2. Principios de arquitectura
 
-### FastAPI es la fuente de verdad
+### Frontend/ es la fuente de la demo
 
-El backend decide:
+Para esta iteracion, `frontend/` debe poder decidir el flujo de demo en modo
+local:
 
-- que input NFC/RFID llego;
+- que cubo simulado se eligio;
 - como se actualiza el buffer por bloques;
 - si la respuesta progresa, necesita ajuste o completa la mision;
-- que recompensas se entregan;
-- que progreso se guarda;
-- que compras se permiten;
-- que eventos visuales deben emitirse.
+- que recompensas se entregan en memoria;
+- que compras se permiten durante la sesion.
+
+FastAPI conserva valor como integracion futura y contrato legacy, pero no debe
+ser obligatorio para correr la demo oficial.
 
 ### Phaser renderiza e interpreta eventos
 
-El frontend no debe validar palabras ni decidir recompensas. Phaser recibe estado
-y eventos desde FastAPI, y los convierte en animaciones:
+Phaser recibe estado desde React/modo local o backend opcional, y lo convierte en
+animaciones:
 
 - aparicion de cubos fisicos;
 - luz del farol;
@@ -53,7 +53,7 @@ y eventos desde FastAPI, y los convierte en animaciones:
 Regla central:
 
 ```txt
-El backend decide que ocurrio.
+El estado de juego decide que ocurrio.
 Phaser decide como se ve.
 ```
 
@@ -64,12 +64,12 @@ Phaser decide como se ve.
 | Motor visual | Phaser 4 | Escenas 2D, sprites, filtros, luz, particulas, input y transiciones |
 | Lenguaje frontend | TypeScript | Tipado de eventos, payloads, escenas y cliente API |
 | Build frontend | Vite | Dev server rapido, HMR y build estatico |
-| Backend | FastAPI | API local, WebSocket, estado de juego, tienda y progreso |
-| Runtime backend | Python 3.11+ | Compatibilidad con el prototipo actual |
-| Realtime | WebSocket `/ws` | Actualizar pantalla al escanear cubos |
-| Input telefono | `GET /nfc?letra=...` | Compatibilidad con NFC Tools y flujo WiFi |
-| Input RFID | Arduino Uno + RC522 + `rfid_bridge.py` | Leer UID y traducirlo a bloque/comando |
-| Persistencia MVP | `arduino/game_state.json` | Recursos, compras, misiones y zonas |
+| Backend | FastAPI opcional | Integracion legacy/futura, no obligatoria para frontend/ |
+| Runtime backend | Python 3.11+ | Compatibilidad con el prototipo anterior |
+| Realtime | WebSocket `/ws` opcional | Solo si se levanta FastAPI |
+| Input telefono | `GET /nfc?letra=...` | Legacy/futuro, fuera del flujo oficial actual |
+| Input RFID | Arduino Uno + RC522 + `rfid_bridge.py` | Legacy/futuro, no requerido |
+| Persistencia demo | `frontend/src/game/state/localDemoState.ts` | Estado local en memoria |
 | Persistencia futura | SQLite | Historial, sesiones y perfiles si el MVP crece |
 | Prototipo visual | Figma | Flujos, layout y componentes |
 | Arte 2D | Krita, Photoshop, Affinity Designer o Illustrator | Fondos, Lumo, cubos, objetos y UI |
@@ -84,7 +84,7 @@ Phaser decide como se ve.
 Phaser 4 es la mejor opcion para iniciar el frontend nuevo porque el proyecto
 necesita una escena 2D viva, no una web tradicional:
 
-- escenas como `MissionScene`, `RewardScene` y `VillageScene`;
+- una escena jugable oficial (`StorybookScene`) y posibles escenas futuras;
 - sprites y atlases para cubos, Lumo, faroles y objetos;
 - particulas para luz, niebla y fragmentos;
 - filtros y efectos visuales para restaurar zonas;
@@ -97,9 +97,9 @@ con Phaser 4.x. La documentacion actual de Phaser presenta Phaser 4 como la
 version nueva para proyectos web 2D y destaca mejoras de renderer, filtros,
 luces y rendimiento.
 
-## 5. Por que mantener FastAPI
+## 5. Por que mantener FastAPI como legacy/opcional
 
-FastAPI ya resuelve lo mas sensible del proyecto:
+FastAPI ya resuelve piezas utiles para integracion posterior:
 
 - recibe eventos desde el telefono o el puente RFID;
 - conserva el contrato `GET /nfc?letra=...`;
@@ -108,11 +108,10 @@ FastAPI ya resuelve lo mas sensible del proyecto:
 - es simple para integrarse con Python, pyserial y archivos JSON;
 - permite tests rapidos con `pytest`.
 
-No conviene migrar el backend a Node, Firebase o un motor multiplayer para el
-MVP. La necesidad actual no es multiplayer ni nube. Es estabilidad local y
-control del hardware.
+No conviene borrarlo, pero tampoco conviene hacerlo obligatorio para esta
+iteracion. La necesidad actual es estabilizar la demo React/Phaser.
 
-## 6. Contratos que no se pueden romper
+## 6. Contratos legacy que no se deben romper
 
 El contrato de entrada principal debe mantenerse:
 
@@ -130,7 +129,7 @@ Ejemplos:
 /nfc?letra=ENTER
 ```
 
-Reglas:
+Reglas legacy:
 
 - un valor normal se agrega al buffer como bloque;
 - en el MVP actual, cada cubo de aprendizaje representa una letra individual;
@@ -142,7 +141,7 @@ Reglas:
 - `available_blocks` es guia visual, no filtro duro del backend;
 - el RFID real solo puede enviar UIDs que existan en `arduino/rfid_uid_map.json`.
 
-## 7. Endpoints backend
+## 7. Endpoints backend opcionales
 
 ### Existentes que se deben conservar
 
@@ -278,25 +277,39 @@ frontend/
   tsconfig.json
   index.html
   src/
-    main.ts
-    game.ts
+    main.tsx
+    App.tsx
     api/
       backendClient.ts
       types.ts
-    scenes/
-      BootScene.ts
-      MapScene.ts
-      MissionScene.ts
-      RewardScene.ts
-      VillageScene.ts
-      DebugOverlay.ts
+    components/
+      PhaserStage.tsx
+      MissionView.tsx
+      VillageView.tsx
+      DebugPanel.tsx
+    game/
+      bridge/
+        sceneBus.ts
+      data/
+        storybookAssets.ts
+      state/
+        localDemoState.ts
+      phaser/
+        bootstrap/
+          createStorybookGame.ts
+        scenes/
+          StorybookScene.ts
+        systems/
+        entities/
+        fx/
+    deprecated/
+      phaser-scenes/
+        createLegacyGame.ts
+        scenes/
     systems/
       EventBus.ts
       MissionEventPlayer.ts
       ShopState.ts
-    ui/
-      buttons.ts
-      text.ts
     assets/
       manifest.ts
   public/
@@ -309,24 +322,15 @@ frontend/
       audio/
 ```
 
-## 11. Escenas del juego
+## 11. Flujo Phaser oficial
 
-### `BootScene`
+El frontend oficial crea Phaser solo desde `components/PhaserStage.tsx`.
 
-- Carga assets base.
-- Inicializa cliente API.
-- Lee `/buffer`, `/progress` y `/shop`.
-- Pasa a mapa o mision.
+```txt
+main.tsx -> App -> MissionView -> PhaserStage -> createStorybookGame -> StorybookScene
+```
 
-### `MapScene`
-
-- Muestra zonas desbloqueadas.
-- Permite entrar a la mision actual.
-- Puede ser minima en el MVP.
-
-### `MissionScene`
-
-Primera zona: Bosque de las Silabas.
+`StorybookScene` es la escena activa del Bosque de las Silabas.
 
 Debe mostrar:
 
@@ -338,19 +342,10 @@ Debe mostrar:
 - cubos escaneados como piezas fisicas;
 - animacion de exito con luz, color y niebla desapareciendo.
 
-### `RewardScene`
+El stack anterior `BootScene/MissionScene/RewardScene/VillageScene/DebugOverlay`
+queda en `src/deprecated/phaser-scenes/` solo como referencia.
 
-- Muestra Lumenes/Fragmentos ganados.
-- Muestra objeto restaurado.
-- Permite ir a aldea o seguir.
-
-### `VillageScene`
-
-- Consume `/progress` y `/shop`.
-- Permite gastar Lumenes y Fragmentos.
-- Refleja compras persistentes.
-
-### `DebugOverlay`
+### Debug React
 
 Debe ser visible para demo, pero secundario.
 
@@ -403,36 +398,30 @@ Reglas:
 
 ## 14. Comandos de desarrollo
 
-### Backend
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r arduino\requirements.txt
-python arduino\sila_server.py
-```
-
-Servidor esperado:
-
-```txt
-http://localhost:5000
-```
-
-Checks:
-
-```powershell
-Invoke-RestMethod http://localhost:5000/health
-Invoke-RestMethod "http://localhost:5000/nfc?letra=M"
-Invoke-RestMethod http://localhost:5000/buffer
-```
-
-### Frontend futuro
+### Frontend oficial
 
 ```powershell
 cd frontend
 npm install
 npm run dev
 npm run build
+npm run preview
+```
+
+Dev/preview:
+
+```txt
+http://localhost:5173
+http://localhost:4173
+```
+
+### Backend legacy opcional
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r arduino\requirements.txt
+python arduino\sila_server.py
 ```
 
 Dev servers:
@@ -442,8 +431,8 @@ FastAPI: http://localhost:5000
 Vite:    http://localhost:5173
 ```
 
-El scaffold `frontend/` usa proxy de Vite hacia FastAPI para mantener el mismo
-contrato de endpoints durante desarrollo.
+`frontend/` puede usar proxy hacia FastAPI si el backend esta levantado. Si no
+hay backend, cae a modo local en memoria.
 
 Division vigente:
 
@@ -452,7 +441,7 @@ Division vigente:
 - Phaser 4: bosque, Lumo, farol, camino, niebla, cubos escaneados, particulas y
   microanimaciones.
 
-### Frontend PixiJS experimental
+### Frontend PixiJS experimental no oficial
 
 ```powershell
 cd frontend-pixi
@@ -470,7 +459,7 @@ PixiJS: http://localhost:5174
 Demo empaquetada:
 
 ```txt
-frontend/dist/ servido por FastAPI
+frontend/dist/ servido por Vite preview o hosting estatico
 ```
 
 ## 15. Testing minimo
@@ -499,12 +488,12 @@ Cubrir:
 
 ### Frontend
 
-Al crear `frontend/`, cubrir:
+Para `frontend/`, cubrir:
 
 - `npm run build`;
 - TypeScript sin errores;
-- conexion a `/buffer`;
-- conexion a `/ws`;
+- modo local sin backend;
+- integracion opcional con `/buffer` y `/ws`;
 - compra desde aldea;
 - captura visual manual o Playwright para escenas clave.
 
@@ -523,8 +512,8 @@ Phaser es mas directo.
 
 ### PixiJS
 
-Es muy buen renderer, pero no es un motor de juego completo. Habria que armar
-mas arquitectura propia para escenas, flujo, eventos y UI.
+Es muy buen renderer, pero no es el camino oficial de esta iteracion. Se mantiene
+en `frontend-pixi/` solo como alternativa experimental.
 
 ### Three.js
 
@@ -533,8 +522,8 @@ producto decide pasar a 3D real.
 
 ### React como frontend principal
 
-Puede servir para paneles o administracion, pero no debe ser el motor de la
-experiencia jugable. La mision necesita escena 2D, animacion y timing visual.
+React es parte oficial del shell de `frontend/`. Phaser sigue siendo la pieza
+para la escena jugable y el timing visual.
 
 ## 17. Roadmap tecnico recomendado
 
@@ -542,24 +531,24 @@ experiencia jugable. La mision necesita escena 2D, animacion y timing visual.
 2. Agregar `/progress`, `/shop` y `/buy`.
 3. Emitir eventos visuales desde el engine.
 4. Crear `frontend/` con Phaser 4 + TypeScript + Vite.
-5. Implementar `MissionScene` del Bosque de las Silabas.
-6. Implementar `RewardScene`.
-7. Implementar `VillageScene` como tienda real.
+5. Mantener `StorybookScene` como escena oficial del Bosque de las Silabas.
+6. Agregar efectos de recompensa dentro del flujo React/Phaser oficial.
+7. Mantener `VillageView` React como tienda real hasta decidir si requiere Phaser.
 8. Reemplazar placeholders por arte y audio.
 9. Evaluar Rive para Lumo.
 10. Considerar SQLite si el progreso crece.
 
 ## 18. Criterio de exito del stack
 
-El stack esta funcionando si:
+El stack oficial esta funcionando si:
 
-- el nino escanea un cubo fisico;
-- el backend recibe `/nfc?letra=...`;
+- la demo abre desde `frontend/`;
+- no requiere hardware ni backend;
 - Phaser muestra el cubo como objeto en escena;
 - la mision valida el progreso;
 - al completar, se entrega recompensa;
 - la aldea permite gastar recompensa;
-- la compra queda persistida;
+- la compra queda reflejada en memoria durante la sesion;
 - todo corre localmente en un PC de demo sin depender de nube.
 
 ## 19. Referencias oficiales

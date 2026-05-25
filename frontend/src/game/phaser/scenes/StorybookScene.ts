@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-import type { MissionState } from "../api/types";
-import { storybookAssets } from "./assets";
-import { SceneEvents, getLatestMissionState, sceneBus } from "./sceneBus";
+import type { MissionState } from "../../../api/types";
+import { SceneEvents, getLatestMissionState, sceneBus } from "../../bridge/sceneBus";
+import { storybookAssets } from "../../data/storybookAssets";
 
 interface CubeVisual {
   root: Phaser.GameObjects.Container;
@@ -40,6 +40,7 @@ export class StorybookScene extends Phaser.Scene {
     this.ensureFallbackTextures();
     this.createWorld();
     sceneBus.on(SceneEvents.stateChanged, this.renderState, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
     const latest = getLatestMissionState();
     if (latest) {
       this.renderState(latest);
@@ -47,7 +48,7 @@ export class StorybookScene extends Phaser.Scene {
     this.scale.on("resize", this.layout, this);
   }
 
-  shutdown(): void {
+  private handleShutdown(): void {
     sceneBus.off(SceneEvents.stateChanged, this.renderState, this);
     this.scale.off("resize", this.layout, this);
   }

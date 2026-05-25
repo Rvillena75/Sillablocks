@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { StorybookScene } from "./StorybookScene";
+import { StorybookScene } from "../scenes/StorybookScene";
 
 export function createStorybookGame(parent: HTMLElement): Phaser.Game {
   return new Phaser.Game({
@@ -19,4 +19,3 @@ export function createStorybookGame(parent: HTMLElement): Phaser.Game {
     scene: [StorybookScene],
   });
 }
-

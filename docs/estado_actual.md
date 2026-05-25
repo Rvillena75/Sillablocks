@@ -1,44 +1,39 @@
 # Estado actual de SilaBlocks
 
-Actualizado: 2026-05-14.
+Actualizado: 2026-05-23.
 
 ## Resumen
 
-SilaBlocks ya funciona como MVP local de lectura inicial con input fisico,
-misiones, recompensas, progreso persistente y tienda. El MVP actual usa cubos de
-letras individuales para construir palabras. El sistema esta preparado para una
-demo universitaria sin nube ni cuentas de usuario.
+SilaBlocks esta en una iteracion software-only. La demo oficial del juego es
+`frontend/`, una app React + Phaser 4 + TypeScript + Vite. Debe correr sin
+hardware, sin NFC real y sin backend obligatorio.
 
-El backend FastAPI sigue siendo la fuente de verdad. El frontend actual es HTML,
-CSS y JavaScript servido por el mismo backend. La migracion visual definida es a
-Phaser 4 + TypeScript + Vite. La app `frontend/` ahora usa React/HTML/CSS para
-la interfaz compleja y Phaser 4 solo para la escena jugable.
-Tambien existe un experimento PixiJS en `frontend-pixi/` para comparar una
-direccion visual mas ilustrada. Las pantallas HTML actuales se mantienen como
-fallback de demo.
+El backend FastAPI, la UI embebida de `arduino/templates/` y el prototipo
+`frontend-pixi/` se mantienen en el repo, pero quedan marcados como
+legacy/alternativos. No son la ruta recomendada para presentar ni seguir esta
+iteracion.
 
 ## Arquitectura actual
 
 ```txt
-Cubos NFC/RFID
-   |
-Telefono NFC o Arduino RFID
-   |
-GET /nfc?letra=...
-   |
-FastAPI
-   |- buffer por bloques
-   |- engine de misiones
-   |- progreso persistente
-   |- tienda
-   |- WebSocket
-   |
-Pantallas HTML
-   |- /       mision
-   |- /aldea  tienda/progreso
+frontend/
+   |- React: shell, paneles, cubos, aldea, tienda, debug
+   |- game/phaser: escena jugable oficial del bosque
+   |- game/bridge: puente React -> Phaser
+   |- game/state/localDemoState: estado local en memoria
+   |- BackendClient: FastAPI opcional con fallback local
+
+legacy/alternativos:
+   |- arduino/sila_server.py
+   |- arduino/templates/
+   |- arduino/static/
+   |- frontend-pixi/
+   |- frontend/src/deprecated/phaser-scenes/
 ```
 
 ## Backend
+
+Estado: legacy/compatible, no obligatorio para la demo oficial.
 
 Entrada principal:
 
@@ -169,11 +164,12 @@ La aldea HTML actual:
 - actualiza visualmente objetos restaurados;
 - escucha WebSocket para refrescar estado.
 
-## Input fisico
+## Input fisico legacy
 
 ### NFC por telefono
 
-El flujo mas estable sigue siendo:
+El flujo por telefono sigue existiendo para integracion posterior, pero no es
+requerido por la demo oficial React/Phaser:
 
 ```txt
 http://<PC_LOCAL_IP>:5000/nfc?letra=<VALOR>
@@ -201,55 +197,49 @@ Importante: el backend acepta cualquier valor normal que llegue por
 `/nfc?letra=...`, pero el puente RFID solo puede enviar UIDs que esten mapeados
 en `rfid_uid_map.json`.
 
-## Frontend actual
+## Frontend oficial
 
-Archivos:
+Ruta oficial:
 
-- `arduino/templates/index.html`
-- `arduino/templates/aldea.html`
-- `arduino/static/app.js`
-- `arduino/static/village.js`
-- `arduino/static/styles.css`
-- `frontend/`: app React + Phaser 4 para la migracion visual.
-- `frontend-pixi/`: prototipo PixiJS para evaluar una direccion visual mas
-  llamativa para ninos.
+- `frontend/`
 
-Pantalla de mision:
+Responsabilidades:
 
-- Bosque de las Silabas.
-- Lumo.
-- farol;
-- niebla;
-- cubos escaneados como piezas fisicas;
-- feedback positivo.
+- React: header, panel de mision, bandeja de cubos, aldea, tienda y debug.
+- Phaser: escena visual del bosque, Lumo, farol, niebla, cubos y feedback.
+- Flujo Phaser oficial: `MissionView -> PhaserStage -> createStorybookGame -> StorybookScene`.
+- Estado local: `frontend/src/game/state/localDemoState.ts`.
+- Backend opcional: `frontend/src/api/backendClient.ts`.
 
-Pantalla de aldea:
+Caminos no oficiales:
 
-- recursos;
-- restauraciones;
-- tienda;
-- compras persistentes.
+- `frontend/src/deprecated/phaser-scenes/`: stack Phaser anterior
+  `BootScene/MissionScene/RewardScene/VillageScene`, no conectado a `npm run dev`.
+- `arduino/templates/index.html` y `arduino/templates/aldea.html`: UI embebida
+  legacy.
+- `frontend-pixi/`: alternativa experimental PixiJS.
 
 ## Verificacion actual
 
-Comando:
+Frontend oficial:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q
+cd frontend
+npm run build
 ```
 
-Ultima verificacion ejecutada durante esta iteracion:
+Backend legacy, solo si se modifica esa capa:
 
-```txt
-37 passed
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q --basetemp C:\tmp\sillablocks-pytest
 ```
 
 ## Limitaciones conocidas
 
-- La pantalla actual todavia no usa Phaser; es HTML/CSS/JS.
-- Las animaciones de mision aun dependen principalmente del estado y CSS; Phaser
-  deberia consumir los eventos visuales de forma mas rica.
+- El modo local de `frontend/` usa estado en memoria; al recargar se reinicia.
+- FastAPI sigue disponible, pero no debe ser obligatorio para probar software.
 - `game_state.json` es suficiente para MVP, pero SQLite sera mejor si se agregan
   perfiles, historial de sesiones o muchas escrituras.
 - El arte sigue siendo placeholder/codigo CSS; faltan assets 2D finales.
-- La aldea funciona, pero necesita pulido visual y mejores estados de feedback.
+- La aldea necesita pulido visual y mejores estados de feedback en una iteracion
+  posterior.

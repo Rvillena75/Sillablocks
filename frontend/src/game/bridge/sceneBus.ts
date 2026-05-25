@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { MissionState } from "../api/types";
+import type { MissionState } from "../../api/types";
 
 export const sceneBus = new Phaser.Events.EventEmitter();
 

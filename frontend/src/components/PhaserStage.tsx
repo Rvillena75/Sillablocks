@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import type { MissionState } from "../api/types";
-import { createStorybookGame } from "../phaser/createStorybookGame";
-import { pushMissionState } from "../phaser/sceneBus";
+import { pushMissionState } from "../game/bridge/sceneBus";
+import { createStorybookGame } from "../game/phaser/bootstrap/createStorybookGame";
 
 interface PhaserStageProps {
   state: MissionState;
