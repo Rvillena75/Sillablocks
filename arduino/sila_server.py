@@ -130,6 +130,13 @@ class MissionSelectRequest(BaseModel):
     mission_id: str
 
 
+class SlotsRequest(BaseModel):
+    s0: str = ""
+    s1: str = ""
+    s2: str = ""
+    s3: str = ""
+
+
 def sync_legacy_state() -> None:
     global current_mission_index, last_input, last_received_input
     global last_ignored_input, last_action, game_status, feedback
@@ -784,9 +791,22 @@ async def receive_slots(
     """Receive the current state of 4 RFID readers simultaneously.
     Send empty string for a slot with no block. Called continuously by the Arduino."""
     game_engine.process_slots([s0, s1, s2, s3])
+    _, events = persist_completed_missions()
     sync_legacy_state()
-    await broadcast_state()
-    return JSONResponse(content=build_state())
+    state = build_state({"events": events})
+    await manager.broadcast(state)
+    return JSONResponse(content=state)
+
+
+@app.post("/slots")
+async def receive_slots_post(request: SlotsRequest) -> JSONResponse:
+    """Receive 4 RFID slots as JSON for bridges that prefer POST."""
+    game_engine.process_slots([request.s0, request.s1, request.s2, request.s3])
+    _, events = persist_completed_missions()
+    sync_legacy_state()
+    state = build_state({"events": events})
+    await manager.broadcast(state)
+    return JSONResponse(content=state)
 
 
 @app.get("/arcade")

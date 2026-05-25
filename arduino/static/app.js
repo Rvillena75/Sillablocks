@@ -23,6 +23,7 @@ const ids = {
   arcadeBtn: document.getElementById("arcadeBtn"),
   debugReceived: document.getElementById("debugReceived"),
   debugInput: document.getElementById("debugInput"),
+  debugSlots: document.getElementById("debugSlots"),
   debugBlocks: document.getElementById("debugBlocks"),
   debugText: document.getElementById("debugText"),
   debugMission: document.getElementById("debugMission"),
@@ -196,12 +197,15 @@ function renderButtons(values) {
 
 function renderSlots(payload) {
   const slots = payload.slots || ["", "", "", ""];
+  const slotTargets = payload.slot_targets || ["", "", "", ""];
   ids.blockTray.replaceChildren();
 
   slots.forEach((letter, index) => {
     const slot = document.createElement("div");
     const filled = letter.trim() !== "";
+    const target = slotTargets[index] || "";
     slot.className = `letter-slot ${filled ? "filled" : "empty"}`;
+    slot.dataset.target = target;
     slot.style.setProperty("--slot-index", index);
 
     const num = document.createElement("span");
@@ -210,7 +214,7 @@ function renderSlots(payload) {
 
     const letterEl = document.createElement("span");
     letterEl.className = "slot-letter";
-    letterEl.textContent = filled ? letter : "";
+    letterEl.textContent = filled ? letter : target;
 
     slot.appendChild(num);
     slot.appendChild(letterEl);
@@ -285,6 +289,7 @@ function renderDebug(payload) {
   const blocks = payload.current_blocks || [];
   ids.debugReceived.textContent = payload.last_received_input || "-";
   ids.debugInput.textContent = payload.last_input || "-";
+  ids.debugSlots.textContent = JSON.stringify(payload.slots || []);
   ids.debugBlocks.textContent = JSON.stringify(blocks);
   ids.debugText.textContent = payload.current_text || "-";
   ids.debugMission.textContent = payload.mission_id || "-";

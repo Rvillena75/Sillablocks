@@ -675,6 +675,50 @@ def test_post_nfc_accepts_json_body() -> None:
     assert payload["action"] == "append"
 
 
+def test_slots_route_maps_four_readers_to_mission_spaces() -> None:
+    client = make_client()
+
+    response = client.get("/slots", params={"s0": "M", "s1": "A", "s2": "M", "s3": "A"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["slots"] == ["M", "A", "M", "A"]
+    assert payload["slot_targets"] == ["M", "A", "M", "A"]
+    assert payload["current_blocks"] == ["M", "A", "M", "A"]
+    assert payload["current_text"] == "MAMA"
+    assert payload["status"] == "success"
+    assert payload["action"] == "slots"
+    assert payload["events"][0]["type"] == "mission_completed"
+    assert client.get("/progress").json()["completed_missions"] == ["m001"]
+
+
+def test_slots_route_updates_when_reader_space_is_empty() -> None:
+    client = make_client()
+    client.get("/slots", params={"s0": "M", "s1": "A", "s2": "P", "s3": ""})
+
+    response = client.get("/slots", params={"s0": "M", "s1": "", "s2": "P", "s3": ""})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["slots"] == ["M", "", "P", ""]
+    assert payload["current_blocks"] == ["M", "P"]
+    assert payload["current_text"] == "MP"
+    assert payload["status"] == "try_again"
+
+
+def test_slots_route_accepts_json_body() -> None:
+    client = make_client()
+
+    response = client.post("/slots", json={"s0": "M", "s1": "A", "s2": "", "s3": ""})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["slots"] == ["M", "A", "", ""]
+    assert payload["current_blocks"] == ["M", "A"]
+    assert payload["current_text"] == "MA"
+    assert payload["status"] == "in_progress"
+
+
 def test_papa_validates_correctly_in_second_mission() -> None:
     client = make_client()
     complete_current_mission(client)

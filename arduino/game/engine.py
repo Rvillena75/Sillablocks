@@ -87,6 +87,7 @@ class GameEngine:
         self.last_received_input = ",".join(self.slots)
         self.last_action = "slots"
         self.evaluate_game_state()
+        self.remember_input(self.last_received_input, self.last_action, True)
 
     def reset_runtime(self) -> None:
         self.buffer.clear()
@@ -377,6 +378,7 @@ class GameEngine:
             "expected_next_block": self.expected_next_block(),
             "has_block_mismatch": bool(self.current_blocks) and not self.is_prefix_of_target(),
             "slots": list(self.slots),
+            "slot_targets": (list(mission.target_blocks) + ["", "", "", ""])[:4],
             "status": self.status,
             "feedback": self.feedback,
             "mission": mission.as_dict(),

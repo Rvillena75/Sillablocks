@@ -1218,6 +1218,10 @@ h2 {
   color: rgba(255, 244, 196, 0.4);
 }
 
+.letter-slot.empty .slot-letter {
+  color: rgba(255, 244, 196, 0.44);
+}
+
 .letter-slot.filled .slot-number {
   color: rgba(80, 50, 10, 0.55);
 }
