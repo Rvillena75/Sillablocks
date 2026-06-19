@@ -1,8 +1,29 @@
+import asyncio
+import time
+
 from fastapi.testclient import TestClient
 import pytest
 
 import arduino.sila_server as server
 from arduino.game.progress import GameProgress, ProgressStore
+
+
+class SlowWebSocket:
+    async def send_text(self, _message: str) -> None:
+        await asyncio.sleep(1)
+
+
+def test_broadcast_drops_slow_websocket_without_blocking_rfid_request() -> None:
+    manager = server.ConnectionManager()
+    slow_websocket = SlowWebSocket()
+    manager.active_connections.append(slow_websocket)  # type: ignore[arg-type]
+
+    started_at = time.perf_counter()
+    asyncio.run(manager.broadcast({"slots": ["M", "A", "", ""]}))
+    elapsed = time.perf_counter() - started_at
+
+    assert elapsed < 0.5
+    assert manager.active_connections == []
 
 
 @pytest.fixture(autouse=True)

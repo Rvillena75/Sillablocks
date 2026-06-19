@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import sys
@@ -49,6 +50,7 @@ from arduino.game.shop import (  # noqa: E402
 
 HOST = "0.0.0.0"
 PORT = 5000
+WEBSOCKET_SEND_TIMEOUT_SECONDS = 0.1
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATE_DIR = BASE_DIR / "templates"
@@ -96,16 +98,26 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, payload: dict[str, Any]) -> None:
-        stale_connections: list[WebSocket] = []
         message = json.dumps(payload, ensure_ascii=False)
-        for websocket in self.active_connections:
-            try:
-                await websocket.send_text(message)
-            except Exception:
-                stale_connections.append(websocket)
 
-        for websocket in stale_connections:
-            self.disconnect(websocket)
+        async def send(websocket: WebSocket) -> WebSocket | None:
+            try:
+                await asyncio.wait_for(
+                    websocket.send_text(message),
+                    timeout=WEBSOCKET_SEND_TIMEOUT_SECONDS,
+                )
+            except Exception:
+                return websocket
+            return None
+
+        connections = list(self.active_connections)
+        if not connections:
+            return
+
+        results = await asyncio.gather(*(send(websocket) for websocket in connections))
+        for stale_connection in results:
+            if stale_connection is not None:
+                self.disconnect(stale_connection)
 
 
 manager = ConnectionManager()

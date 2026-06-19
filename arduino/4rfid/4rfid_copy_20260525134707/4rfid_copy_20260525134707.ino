@@ -8,6 +8,10 @@
 // Orden: lector 1, lector 2, lector 3, lector 4.
 byte SS_PINS[NUM_READERS] = {16, 5, 21, 4};
 
+const unsigned long TAG_REMOVAL_MS = 1500;
+const unsigned long BUTTON_DEBOUNCE_MS = 25;
+const byte UID_CONFIRMATIONS_REQUIRED = 2;
+
 MFRC522 readers[NUM_READERS] = {
   MFRC522(SS_PINS[0], RST_PIN),
   MFRC522(SS_PINS[1], RST_PIN),
@@ -19,19 +23,38 @@ MFRC522 readers[NUM_READERS] = {
 // FUNCIONES AUXILIARES
 // ==========================
 
-String uidToString(MFRC522::Uid *uid) {
-  String uidStr = "";
+void uidToString(const MFRC522::Uid *uid, char *output, size_t outputSize) {
+  const char HEX_DIGITS[] = "0123456789ABCDEF";
+  size_t position = 0;
 
-  for (byte i = 0; i < uid->size; i++) {
-    if (uid->uidByte[i] < 0x10) {
-      uidStr += "0";
-    }
-
-    uidStr += String(uid->uidByte[i], HEX);
+  for (byte i = 0; i < uid->size && position + 2 < outputSize; i++) {
+    output[position++] = HEX_DIGITS[(uid->uidByte[i] >> 4) & 0x0F];
+    output[position++] = HEX_DIGITS[uid->uidByte[i] & 0x0F];
   }
 
-  uidStr.toUpperCase();
-  return uidStr;
+  output[position] = '\0';
+}
+
+bool readPresentTag(MFRC522 &reader, char *uid, size_t uidSize) {
+  byte atqa[2];
+  byte atqaSize = sizeof(atqa);
+
+  // WUPA detecta tanto tarjetas nuevas (IDLE) como tarjetas que siguen
+  // colocadas (HALT). PICC_IsNewCardPresent() solo cubre el primer caso.
+  MFRC522::StatusCode status = reader.PICC_WakeupA(atqa, &atqaSize);
+  if (status != MFRC522::STATUS_OK && status != MFRC522::STATUS_COLLISION) {
+    return false;
+  }
+
+  if (!reader.PICC_ReadCardSerial()) {
+    return false;
+  }
+
+  uidToString(&reader.uid, uid, uidSize);
+  // Dejarla en HALT permite que WUPA confirme su presencia en el siguiente ciclo.
+  reader.PICC_HaltA();
+  reader.PCD_StopCrypto1();
+  return uid[0] != '\0';
 }
 
 // ==========================
@@ -43,6 +66,13 @@ void setup() {
   delay(1000);
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  // Todos los lectores comparten SPI. Mantener cada CS en HIGH antes de
+  // iniciar el bus evita que un RC522 contienda durante el arranque.
+  for (byte i = 0; i < NUM_READERS; i++) {
+    pinMode(SS_PINS[i], OUTPUT);
+    digitalWrite(SS_PINS[i], HIGH);
+  }
 
   // ESP32 SPI por defecto:
   // SCK  = GPIO 18
@@ -84,13 +114,13 @@ void setup() {
 // ==========================
 
 void loop() {
-  static unsigned long lastSend[NUM_READERS] = {0};
   static unsigned long lastSeen[NUM_READERS] = {0};
-  static String currentUid[NUM_READERS] = {"", "", "", ""};
-  static bool lastButtonState = HIGH;
-
-  const unsigned long INTERVALO_ENVIO = 250; // Evita saturar el puerto Serial.
-  const unsigned long TIEMPO_SIN_LECTURA = 900; // Limpia el espacio si ya no se lee tag.
+  static char currentUid[NUM_READERS][21] = {{0}};
+  static char candidateUid[NUM_READERS][21] = {{0}};
+  static byte candidateConfirmations[NUM_READERS] = {0};
+  static bool stableButtonState = HIGH;
+  static bool sampledButtonState = HIGH;
+  static unsigned long buttonChangedAt = 0;
   unsigned long ahora = millis();
 
   // ==========================
@@ -99,54 +129,66 @@ void loop() {
 
   bool buttonState = digitalRead(BUTTON_PIN);
 
-  // Con INPUT_PULLUP:
-  // HIGH = no presionado
-  // LOW  = presionado
-  if (lastButtonState == HIGH && buttonState == LOW) {
-    Serial.println("BUTTON,ENTER");
+  if (buttonState != sampledButtonState) {
+    sampledButtonState = buttonState;
+    buttonChangedAt = ahora;
   }
 
-  lastButtonState = buttonState;
+  if (sampledButtonState != stableButtonState &&
+      ahora - buttonChangedAt >= BUTTON_DEBOUNCE_MS) {
+    stableButtonState = sampledButtonState;
+    if (stableButtonState == LOW) {
+      Serial.println("BUTTON,ENTER");
+    }
+  }
 
   // ==========================
   // LECTURA DE LOS RFID
   // ==========================
 
   for (byte i = 0; i < NUM_READERS; i++) {
-    if (!readers[i].PICC_IsNewCardPresent()) {
-      continue;
-    }
-
-    if (!readers[i].PICC_ReadCardSerial()) {
-      continue;
-    }
-
-    if (ahora - lastSend[i] >= INTERVALO_ENVIO) {
-      lastSend[i] = ahora;
-
-      String uid = uidToString(&readers[i].uid);
+    char detectedUid[21] = {0};
+    if (readPresentTag(readers[i], detectedUid, sizeof(detectedUid))) {
       lastSeen[i] = ahora;
 
-      if (uid != currentUid[i]) {
-        currentUid[i] = uid;
+      if (strcmp(detectedUid, currentUid[i]) == 0) {
+        candidateUid[i][0] = '\0';
+        candidateConfirmations[i] = 0;
+      } else {
+        if (strcmp(detectedUid, candidateUid[i]) == 0) {
+          candidateConfirmations[i]++;
+        } else {
+          strncpy(candidateUid[i], detectedUid, sizeof(candidateUid[i]) - 1);
+          candidateUid[i][sizeof(candidateUid[i]) - 1] = '\0';
+          candidateConfirmations[i] = 1;
+        }
+      }
+
+      if (candidateConfirmations[i] >= UID_CONFIRMATIONS_REQUIRED) {
+        strncpy(currentUid[i], detectedUid, sizeof(currentUid[i]) - 1);
+        currentUid[i][sizeof(currentUid[i]) - 1] = '\0';
+        candidateUid[i][0] = '\0';
+        candidateConfirmations[i] = 0;
         Serial.print("SLOT,");
         Serial.print(i);
         Serial.print(",");
-        Serial.println(uid);
+        Serial.println(currentUid[i]);
       }
     }
-
-    // No llamar PICC_HaltA() si quieres lectura continua mientras el tag esté puesto.
-    // readers[i].PICC_HaltA();
-    // readers[i].PCD_StopCrypto1();
   }
 
   for (byte i = 0; i < NUM_READERS; i++) {
-    if (currentUid[i] != "" && ahora - lastSeen[i] >= TIEMPO_SIN_LECTURA) {
-      currentUid[i] = "";
-      Serial.print("SLOT,");
-      Serial.print(i);
-      Serial.println(",");
+    if (lastSeen[i] != 0 && ahora - lastSeen[i] >= TAG_REMOVAL_MS) {
+      bool hadConfirmedTag = currentUid[i][0] != '\0';
+      currentUid[i][0] = '\0';
+      candidateUid[i][0] = '\0';
+      candidateConfirmations[i] = 0;
+      lastSeen[i] = 0;
+      if (hadConfirmedTag) {
+        Serial.print("SLOT,");
+        Serial.print(i);
+        Serial.println(",");
+      }
     }
   }
 }
